@@ -6,3 +6,4 @@ pub mod queue;
 pub mod errors;
 pub mod swapchain;
 pub mod pipeline;
+pub mod render_pass;
