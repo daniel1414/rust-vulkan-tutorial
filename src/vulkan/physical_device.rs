@@ -1,9 +1,14 @@
+use std::collections::HashSet;
+
 use vulkanalia::prelude::v1_0::*;
 use crate::app::AppData;
 use anyhow::{anyhow, Result};
 use log::*;
 use super::queue::QueueFamilyIndices;
+use super::errors::SuitabilityError;
+use super::swapchain::SwapchainSupport;
 
+pub const DEVICE_EXTENSIONS: &[vk::ExtensionName] = &[vk::KHR_SWAPCHAIN_EXTENSION.name];
 
 pub unsafe fn pick_physical_device(instance: &Instance, data: &mut AppData) -> Result<()> {
     for physical_device in instance.enumerate_physical_devices()? {
@@ -27,5 +32,26 @@ pub unsafe fn check_physical_device(
     physical_device: vk::PhysicalDevice,
 ) -> Result<()> {
     QueueFamilyIndices::get(instance, data, physical_device)?;
+    let support = SwapchainSupport::get(instance, data, physical_device)?;
+    if support.formats.is_empty() || support.present_modes.is_empty() {
+        return Err(anyhow!(SuitabilityError("Insufficient swapchain support.")))
+    }
     Ok(())
+}
+
+pub unsafe fn check_physical_device_extensions(
+    instance: &Instance,
+    physical_device: vk::PhysicalDevice,
+) -> Result<()> {
+    let extensions = instance
+        .enumerate_device_extension_properties(physical_device, None)?
+        .iter()
+        .map(|e| e.extension_name)
+        .collect::<HashSet<_>>();
+
+    if DEVICE_EXTENSIONS.iter().all(|e| extensions.contains(e)) {
+        Ok(())
+    } else {
+        Err(anyhow!(SuitabilityError("Missing required device extensions!")))
+    }
 }

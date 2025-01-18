@@ -1,4 +1,6 @@
+use vk::{KhrSurfaceExtension, KhrSwapchainExtension};
 use vulkanalia::prelude::v1_0::*;
+use vulkanalia::window as vk_window;
 use vulkanalia::vk::ExtDebugUtilsExtension;
 use vulkanalia::loader::{LibloadingLoader, LIBRARY};
 use winit::window::Window;
@@ -7,6 +9,7 @@ use anyhow::{anyhow, Result};
 use crate::vulkan::instance::create_instance;
 use crate::vulkan::physical_device::pick_physical_device;
 use crate::vulkan::device::create_logical_device;
+use crate::vulkan::swapchain::{create_swapchain, create_swapchain_image_views};
 use crate::VALIDATION_ENABLED;
 
 /// The Vulkan App
@@ -26,8 +29,11 @@ impl App {
         let entry = Entry::new(loader).map_err(|b| anyhow!("{}", b))?;
         let mut data = AppData::default();
         let instance = create_instance(window, &entry, &mut data)?;
+        data.surface = vk_window::create_surface(&instance, &window, &window)?;
         pick_physical_device(&instance, &mut data)?;
         let device = create_logical_device(&entry, &instance, &mut data)?;
+        create_swapchain(window, &instance, &device, &mut data)?;
+        create_swapchain_image_views(&device, &mut data)?;
         Ok(Self {entry, instance, data, device})
     }
 
@@ -38,10 +44,16 @@ impl App {
 
     /// Destroys our Vulkan app.
     pub unsafe fn destroy(&mut self) {
+        self.data.swapchain_image_views
+            .iter()
+            .for_each(|v| self.device.destroy_image_view(*v, None));
+
+        self.device.destroy_swapchain_khr(self.data.swapchain, None);
         self.device.destroy_device(None);
         if VALIDATION_ENABLED {
             self.instance.destroy_debug_utils_messenger_ext(self.data.messenger,None);
         }
+        self.instance.destroy_surface_khr(self.data.surface, None);
         self.instance.destroy_instance(None);
     }    
 }
@@ -53,4 +65,11 @@ pub struct AppData {
     pub messenger: vk::DebugUtilsMessengerEXT,
     pub physical_device: vk::PhysicalDevice,
     pub graphics_queue: vk::Queue,
+    pub present_queue: vk::Queue,
+    pub surface: vk::SurfaceKHR,
+    pub swapchain_format: vk::Format,
+    pub swapchain_extent: vk::Extent2D,
+    pub swapchain: vk::SwapchainKHR,
+    pub swapchain_images: Vec<vk::Image>,
+    pub swapchain_image_views: Vec<vk::ImageView>,
 }
