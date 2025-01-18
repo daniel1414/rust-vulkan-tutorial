@@ -10,6 +10,7 @@ use crate::vulkan::instance::create_instance;
 use crate::vulkan::physical_device::pick_physical_device;
 use crate::vulkan::device::create_logical_device;
 use crate::vulkan::swapchain::{create_swapchain, create_swapchain_image_views};
+use crate::vulkan::pipeline::create_pipeline;
 use crate::VALIDATION_ENABLED;
 
 /// The Vulkan App
@@ -34,6 +35,7 @@ impl App {
         let device = create_logical_device(&entry, &instance, &mut data)?;
         create_swapchain(window, &instance, &device, &mut data)?;
         create_swapchain_image_views(&device, &mut data)?;
+        create_pipeline(&device, &mut data)?;
         Ok(Self {entry, instance, data, device})
     }
 
