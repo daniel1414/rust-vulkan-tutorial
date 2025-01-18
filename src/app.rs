@@ -48,6 +48,7 @@ impl App {
 
     /// Destroys our Vulkan app.
     pub unsafe fn destroy(&mut self) {
+        self.device.destroy_pipeline(self.data.pipeline, None);
         self.device.destroy_pipeline_layout(self.data.pipeline_layout, None);
         self.device.destroy_render_pass(self.data.render_pass, None);
         self.data.swapchain_image_views
@@ -80,4 +81,5 @@ pub struct AppData {
     pub swapchain_image_views: Vec<vk::ImageView>,
     pub render_pass: vk::RenderPass,
     pub pipeline_layout: vk::PipelineLayout,
+    pub pipeline: vk::Pipeline,
 }
