@@ -47,7 +47,7 @@ pub unsafe fn create_command_buffers(
 
         let color_clear_value = vk::ClearValue {
             color: vk::ClearColorValue {
-                float32: [0.1, 0.1, 0.1, 1.0]
+                float32: [0.05, 0.05, 0.05, 1.0]
             }
         };
 
