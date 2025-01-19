@@ -50,6 +50,7 @@ fn main() -> Result<()> {
                     WindowEvent::RedrawRequested if !elwt.exiting() => unsafe { app.render(&window) }.unwrap(),
                     WindowEvent::CloseRequested => {
                         elwt.exit();
+                        unsafe { app.device.device_wait_idle().unwrap(); }
                         unsafe { app.destroy(); }
                     }
                     _ => ()
