@@ -6,6 +6,7 @@ use vulkanalia::loader::{LibloadingLoader, LIBRARY};
 use winit::window::Window;
 use anyhow::{anyhow, Result};
 
+use crate::vulkan::framebuffer::create_framebuffers;
 use crate::vulkan::instance::create_instance;
 use crate::vulkan::physical_device::pick_physical_device;
 use crate::vulkan::device::create_logical_device;
@@ -38,6 +39,7 @@ impl App {
         create_swapchain_image_views(&device, &mut data)?;
         create_render_pass(&instance, &device, &mut data)?;
         create_pipeline(&device, &mut data)?;
+        create_framebuffers(&device, &mut data)?;
         Ok(Self {entry, instance, data, device})
     }
 
@@ -48,6 +50,9 @@ impl App {
 
     /// Destroys our Vulkan app.
     pub unsafe fn destroy(&mut self) {
+        self.data.framebuffers
+            .iter()
+            .for_each(|f| self.device.destroy_framebuffer(*f, None));
         self.device.destroy_pipeline(self.data.pipeline, None);
         self.device.destroy_pipeline_layout(self.data.pipeline_layout, None);
         self.device.destroy_render_pass(self.data.render_pass, None);
@@ -82,4 +87,5 @@ pub struct AppData {
     pub render_pass: vk::RenderPass,
     pub pipeline_layout: vk::PipelineLayout,
     pub pipeline: vk::Pipeline,
+    pub framebuffers: Vec<vk::Framebuffer>,
 }
