@@ -1,0 +1,106 @@
+@startuml vulkan_architecture
+
+left to right direction
+skinparam packageStyle rectangle
+
+package "Vulkan Application" {
+    class VulkanApplication {
+        +initWindow()
+        +initVulkan()
+        +mainLoop()
+        +cleanup()
+    }
+}
+
+package "Instance and Devices" {
+    class Instance {
+        +createInstance()
+        +listExtensions()
+    }
+    class PhysicalDevice {
+        +enumeratePhysicalDevices()
+        +getQueueFamilies()
+        +selectDevice()
+    }
+    class LogicalDevice {
+        +createLogicalDevice()
+        +getQueues()
+    }
+}
+
+package "Swapchain" {
+    class Surface {
+        +createSurface()
+    }
+    class Swapchain {
+        +createSwapchain()
+        +getImages()
+        +recreateSwapchain()
+    }
+    class ImageViews {
+        +createImageViews()
+    }
+}
+
+package "Pipeline" {
+    class ShaderModule {
+        +loadShader()
+    }
+    class RenderPass {
+        +createRenderPass()
+    }
+    class PipelineLayout {
+        +createPipelineLayout()
+    }
+    class GraphicsPipeline {
+        +createPipeline()
+    }
+}
+
+package "Framebuffers" {
+    class Framebuffer {
+        +createFramebuffers()
+    }
+}
+
+package "Command Buffers" {
+    class CommandPool {
+        +createCommandPool()
+    }
+    class CommandBuffer {
+        +allocateCommandBuffers()
+        +recordCommands()
+    }
+}
+
+package "Synchronization" {
+    class Semaphores {
+        +createSemaphores()
+    }
+    class Fences {
+        +createFences()
+    }
+}
+
+VulkanApplication --> Instance : uses
+Instance --> PhysicalDevice : discovers
+PhysicalDevice --> LogicalDevice : configures
+LogicalDevice --> Surface : initializes
+
+Surface --> Swapchain : links to
+Swapchain --> ImageViews : processes
+Swapchain --> Framebuffer : prepares
+
+GraphicsPipeline --> ShaderModule : composes
+GraphicsPipeline --> RenderPass : relies on
+GraphicsPipeline --> PipelineLayout : connects to
+GraphicsPipeline --> Framebuffer : operates on
+
+CommandBuffer --> CommandPool : allocates from
+CommandBuffer --> GraphicsPipeline : records commands for
+CommandBuffer --> Swapchain : interacts with
+
+Synchronization --> CommandBuffer : controls execution
+Synchronization --> Swapchain : controls rendering
+
+@enduml
