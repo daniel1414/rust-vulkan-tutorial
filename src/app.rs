@@ -13,6 +13,7 @@ use crate::vulkan::device::create_logical_device;
 use crate::vulkan::render_pass::create_render_pass;
 use crate::vulkan::swapchain::{create_swapchain, create_swapchain_image_views};
 use crate::vulkan::pipeline::create_pipeline;
+use crate::vulkan::commands::create_command_pool;
 use crate::VALIDATION_ENABLED;
 
 /// The Vulkan App
@@ -40,6 +41,8 @@ impl App {
         create_render_pass(&instance, &device, &mut data)?;
         create_pipeline(&device, &mut data)?;
         create_framebuffers(&device, &mut data)?;
+        create_command_pool(&instance, &device, &mut data)?;
+
         Ok(Self {entry, instance, data, device})
     }
 
@@ -50,6 +53,7 @@ impl App {
 
     /// Destroys our Vulkan app.
     pub unsafe fn destroy(&mut self) {
+        self.device.destroy_command_pool(self.data.command_pool, None);
         self.data.framebuffers
             .iter()
             .for_each(|f| self.device.destroy_framebuffer(*f, None));
@@ -88,4 +92,5 @@ pub struct AppData {
     pub pipeline_layout: vk::PipelineLayout,
     pub pipeline: vk::Pipeline,
     pub framebuffers: Vec<vk::Framebuffer>,
+    pub command_pool: vk::CommandPool,
 }
