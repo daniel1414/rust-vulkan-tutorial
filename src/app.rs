@@ -17,6 +17,7 @@ use crate::vulkan::swapchain::{create_swapchain, create_swapchain_image_views};
 use crate::vulkan::pipeline::create_pipeline;
 use crate::vulkan::commands::{create_command_buffers, create_command_pool};
 use crate::vulkan::synchronization::create_sync_objects;
+use crate::vulkan::vertex_buffer::create_vertex_buffer;
 use vulkanalia::Version;
 
 pub const MAX_FRAMES_IN_FLIGHT: usize = 3;
@@ -53,6 +54,7 @@ impl App {
         create_pipeline(&device, &mut data)?;
         create_framebuffers(&device, &mut data)?;
         create_command_pool(&instance, &device, &mut data)?;
+        create_vertex_buffer(&instance, &device, &mut data)?;
         create_command_buffers(&device, &mut data)?;
         create_sync_objects(&device, &mut data)?;
 
@@ -198,6 +200,7 @@ impl App {
     pub unsafe fn destroy(&mut self) {
         self.destroy_swapchain();
 
+        self.device.destroy_buffer(self.data.vertex_buffer, None);
         self.data.command_completion_fences
             .iter()
             .for_each(|f| self.device.destroy_fence(*f, None));
@@ -277,4 +280,6 @@ pub struct AppData {
     /// Ensures that a swapchain image is not overwritten or reused 
     /// while it is still being processed.
     pub(crate) image_usage_fences: Vec<vk::Fence>,
+
+    pub(crate) vertex_buffer: vk::Buffer,
 }
