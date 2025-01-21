@@ -35,6 +35,28 @@ impl SwapchainSupport {
     }
 }
 
+/// Creates a vulkan swapchain that holds images that are displayed in the window
+/// 
+/// A swapchain is a collection of images that are used for presenting rendered content
+/// to the screen. It manages the back-and-forth process of rendering images and
+/// displaying them, often referred to as buffer swapping.
+/// 
+/// 1. Render content to images stored in GPU memory.
+/// 2. Vulkan handles the process of displaying the images to the user.
+/// 
+/// Buffering allows rendering and presentation to happen asynchronously.
+/// Ensures that rendering and presentation do not interfere with each other.
+/// Links Vulkan with the OS's windowing system (X11, Win32 etc.).
+/// 
+/// The front buffer is the image currently displayed on the screen.
+/// The back buffer(s) are the images where the rendering takes place.
+/// Once rendering is complete, a back buffer is swapped with the front buffer for display.
+/// 
+/// Tripple buffering - Two images are used for rendering while one is displayed, 
+/// reducing latency and increasing smoothness.
+/// 
+/// The presentation mode defines how images are swapped between the front and back buffers.
+/// 
 pub unsafe fn create_swapchain(
     window: &Window,
     instance: &Instance,
@@ -130,6 +152,21 @@ pub fn get_swapchain_extent (
     }
 }
 
+/// Swapchain images are stored in GPU memory and are often allocated in a format
+/// optimized for the display hardware. An image view is an object that describes how
+/// to access a specigic portion of a Vulkan image. This separates the raw data (image)
+/// from the way it is interpreted and accessed (view).
+/// 
+/// Vulkan images can be multi-layered (array textures or cubemaps),
+/// multi-leveled (mipmaps),
+/// multi-aspected (color, depth, stencil).
+/// The image view specifies which portion is accessible and in what format.
+/// 
+/// Images have specific layouts for different stages:
+/// VK_IMAGE_LAYOUT_PRESENT_SRC_KHR: Used when presenting the image.
+/// VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL: Used when rendering to the image.
+/// 
+/// For rendering, the image view is bound to the framebuffer.
 pub unsafe fn create_swapchain_image_views(
     device: &Device,
     data: &mut AppData
@@ -143,6 +180,10 @@ pub unsafe fn create_swapchain_image_views(
                 .b(vk::ComponentSwizzle::IDENTITY)
                 .a(vk::ComponentSwizzle::IDENTITY);
 
+            // This specifies which part (or "subresource") of the Vulkan image
+            // will be accessible through the image view being created.
+            // A subresource range allows you to narrow down the part of the image that the view exposes,
+            // such as a specific mipmap level, an array layer or a combination of both.
             let subresource_range = vk::ImageSubresourceRange::builder()
                 .aspect_mask(vk::ImageAspectFlags::COLOR)
                 .base_mip_level(0)

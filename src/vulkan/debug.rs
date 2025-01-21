@@ -1,6 +1,6 @@
-use log::*;
-use std::ffi::{CStr, c_void};
 use vulkanalia::prelude::v1_0::*;
+use std::ffi::{CStr, c_void};
+use log::*;
 
 pub extern "system" fn debug_callback (
     severity: vk::DebugUtilsMessageSeverityFlagsEXT,

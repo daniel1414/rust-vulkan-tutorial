@@ -4,7 +4,7 @@ use anyhow::Result;
 use vulkanalia::prelude::v1_0::*;
 use crate::app::AppData;
 use crate::vulkan::queue::*;
-use crate::{VALIDATION_ENABLED, VALIDATION_LAYER, PORTABILITY_MACOS_VERSION};
+use crate::app::{VALIDATION_ENABLED, VALIDATION_LAYER, PORTABILITY_MACOS_VERSION};
 use super::physical_device::DEVICE_EXTENSIONS;
 
 pub unsafe fn create_logical_device(

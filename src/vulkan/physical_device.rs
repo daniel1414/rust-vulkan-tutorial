@@ -31,11 +31,19 @@ pub unsafe fn check_physical_device(
     data: &AppData,
     physical_device: vk::PhysicalDevice,
 ) -> Result<()> {
+    
+    // Check if the physical device contains the needed queue indices (for graphics and presentation queues)
     QueueFamilyIndices::get(instance, data, physical_device)?;
+
+    // Check if the physical device supports swapchains
     let support = SwapchainSupport::get(instance, data, physical_device)?;
     if support.formats.is_empty() || support.present_modes.is_empty() {
         return Err(anyhow!(SuitabilityError("Insufficient swapchain support.")))
     }
+
+    // Check if the physical device has the required extensions
+    check_physical_device_extensions(instance, physical_device)?;
+
     Ok(())
 }
 

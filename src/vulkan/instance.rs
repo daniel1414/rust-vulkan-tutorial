@@ -5,7 +5,7 @@ use winit::window::Window;
 use crate::app::AppData;
 use anyhow::{anyhow, Result};
 use std::collections::HashSet;
-use crate::{VALIDATION_ENABLED, VALIDATION_LAYER, PORTABILITY_MACOS_VERSION};
+use crate::app::{VALIDATION_ENABLED, VALIDATION_LAYER, PORTABILITY_MACOS_VERSION};
 use log::*;
 use super::debug::debug_callback;
 

@@ -1,14 +1,15 @@
-use vulkanalia::prelude::v1_0::*;
-use crate::app::AppData;
 use anyhow::Result;
+use vulkanalia::prelude::v1_0::*;
 use vulkanalia::bytecode::Bytecode;
+
+use crate::app::AppData;
 
 pub unsafe fn create_pipeline(
     device: &Device,
     data: &mut AppData
 ) -> Result<()> {
-    let vert = include_bytes!("../shaders/vert.spv");
-    let frag = include_bytes!("../shaders/frag.spv");
+    let vert = include_bytes!("shaders/vert.spv");
+    let frag = include_bytes!("shaders/frag.spv");
 
     let vert_module = create_shader_module(device, vert)?;
     let frag_module = create_shader_module(device, frag)?;

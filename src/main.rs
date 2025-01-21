@@ -15,31 +15,19 @@ use winit::event::{Event, WindowEvent};
 use winit::event_loop::EventLoop;
 use winit::window::WindowBuilder;
 use vulkanalia::prelude::v1_0::*;
-use vulkanalia::Version;
-
-const VALIDATION_ENABLED: bool = cfg!(debug_assertions);
-const VALIDATION_LAYER: vk::ExtensionName = vk::ExtensionName::from_bytes(b"VK_LAYER_KHRONOS_validation");
-const PORTABILITY_MACOS_VERSION: Version = Version::new(1, 3, 216);
 
 fn main() -> Result<()> {
     pretty_env_logger::init();
 
-    log::trace!("a trace example");
-    log::debug!("deboogging");
-    log::info!("such information");
-    log::warn!("o_O");
-    log::error!("boom");
-
     // Window
-
     let event_loop = EventLoop::new()?;
     let window = WindowBuilder::new()
         .with_title("Vulkan here we goo!!!")
         .with_inner_size(LogicalSize::new(1024, 768))
         .build(&event_loop)?;
 
-    // App
-
+    
+    // Vulkan App
     let mut app = unsafe { App::create(&window)? };
     event_loop.run(move |event, elwt| {
         match event {
@@ -50,8 +38,15 @@ fn main() -> Result<()> {
                     WindowEvent::RedrawRequested if !elwt.exiting() => unsafe { app.render(&window) }.unwrap(),
                     WindowEvent::CloseRequested => {
                         elwt.exit();
+                        // Wait for the GPU to finish it's work before we destroy the app
+                        // not to destroy components that are currently in use by the GPU.
                         unsafe { app.device.device_wait_idle().unwrap(); }
+
+                        // Deallocate everything from the GPU.
                         unsafe { app.destroy(); }
+                    },
+                    WindowEvent::DroppedFile(buf) => {
+                        println!("{}", buf.display());
                     }
                     _ => ()
                 }
