@@ -29,13 +29,14 @@ fn main() -> Result<()> {
     
     // Vulkan App
     let mut app = unsafe { App::create(&window)? };
+    let mut minimized = false;
     event_loop.run(move |event, elwt| {
         match event {
             // Request a redraw when all events were processed.
             Event::AboutToWait => window.request_redraw(),
             Event::WindowEvent { event, .. } => { 
                 match event {
-                    WindowEvent::RedrawRequested if !elwt.exiting() => unsafe { app.render(&window) }.unwrap(),
+                    WindowEvent::RedrawRequested if !elwt.exiting() && !minimized => unsafe { app.render(&window) }.unwrap(),
                     WindowEvent::CloseRequested => {
                         elwt.exit();
                         // Wait for the GPU to finish it's work before we destroy the app
@@ -45,6 +46,14 @@ fn main() -> Result<()> {
                         // Deallocate everything from the GPU.
                         unsafe { app.destroy(); }
                     },
+                    WindowEvent::Resized(size) => {
+                        if size.width == 0 && size.height == 0 {
+                            minimized = true;
+                        } else {
+                            minimized = false;
+                            app.resized = true;
+                        }
+                    }
                     WindowEvent::DroppedFile(buf) => {
                         println!("{}", buf.display());
                     }

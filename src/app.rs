@@ -33,6 +33,7 @@ pub struct App {
     pub(crate) data: AppData,
     pub(crate) device: Device,
     pub(crate) frame: usize,
+    pub(crate) resized: bool,
 }
 
 impl App {
@@ -55,7 +56,26 @@ impl App {
         create_command_buffers(&device, &mut data)?;
         create_sync_objects(&device, &mut data)?;
 
-        Ok(Self {entry, instance, data, device, frame: 0})
+        Ok(Self {entry, instance, data, device, frame: 0, resized: false})
+    }
+
+    pub unsafe fn recreate_swapchain(&mut self, window: &Window) -> Result<()> {
+
+        // We shouldn't touch resources that may still be in use.
+        self.device.device_wait_idle()?;
+        self.destroy_swapchain();
+
+        create_swapchain(window, &self.instance, &self.device, &mut self.data)?;
+        create_swapchain_image_views(&self.device, &mut self.data)?;
+        create_render_pass(&self.instance, &self.device, &mut self.data)?;
+        create_pipeline(&self.device, &mut self.data)?;
+        create_framebuffers(&self.device, &mut self.data)?;
+        create_command_buffers(&self.device, &mut self.data)?;
+        self.data
+            .command_completion_fences
+            .resize(self.data.swapchain_images.len(), vk::Fence::null());
+
+        Ok(())
     }
 
     /// Renders a frame for our Vulkan app.
@@ -75,7 +95,7 @@ impl App {
         // More like a request to aquire an image - we get the index instantly, but this
         // doesn't mean the image is ready to be processed. It will be once the semaphore
         // is signaled, only then can we perform operations on the image itself.
-        let image_index = self
+        let result = self
             .device
             .acquire_next_image_khr(
                 self.data.swapchain,
@@ -86,14 +106,19 @@ impl App {
                 // image is ready for rendering.
                 this_frame_image_available_semaphore,
                 vk::Fence::null()
-            )?.0 as usize;
+            );
+        
+        let image_index = match result {
+            Ok((image_index, _)) => image_index as usize,
+            Err(vk::ErrorCode::OUT_OF_DATE_KHR) => return self.recreate_swapchain(window),
+            Err(e) => return Err(anyhow!(e)),
+        };
 
         // If a fence exists and hasn't been signaled for this image, means the GPU
         // is still processing it.
         if !self.data.image_usage_fences[image_index as usize].is_null() {
 
             // So we need to wait for the GPU to finish its operations on this image before proceeding.
-            println!("Waiting for an image({}) that is in use.", image_index);
             self.device.wait_for_fences(
                 &[self.data.image_usage_fences[image_index as usize]],
                 true,
@@ -152,7 +177,17 @@ impl App {
             .swapchains(swapchains)
             .image_indices(image_indices);
             
-        self.device.queue_present_khr(self.data.present_queue, &present_info)?;
+        let result = self.device.queue_present_khr(self.data.present_queue, &present_info);
+        
+        let changed = result == Ok(vk::SuccessCode::SUBOPTIMAL_KHR)
+            || result == Err(vk::ErrorCode::OUT_OF_DATE_KHR);
+        
+        if self.resized || changed {
+            self.resized = false;
+            self.recreate_swapchain(window)?;
+        } else if let Err(e) = result {
+            return Err(anyhow!(e));
+        }
 
         self.frame = (self.frame + 1) % MAX_FRAMES_IN_FLIGHT;
         
@@ -161,6 +196,8 @@ impl App {
 
     /// Destroys our Vulkan app.
     pub unsafe fn destroy(&mut self) {
+        self.destroy_swapchain();
+
         self.data.command_completion_fences
             .iter()
             .for_each(|f| self.device.destroy_fence(*f, None));
@@ -170,11 +207,21 @@ impl App {
         self.data.image_available_semaphores
             .iter()
             .for_each(|s| self.device.destroy_semaphore(*s, None));
+        
+        self.device.destroy_command_pool(self.data.command_pool, None);
+        self.device.destroy_device(None);
+        if VALIDATION_ENABLED {
+            self.instance.destroy_debug_utils_messenger_ext(self.data.messenger,None);
+        }
+        self.instance.destroy_surface_khr(self.data.surface, None);
+        self.instance.destroy_instance(None);
+    }
 
+    unsafe fn destroy_swapchain(&mut self) {
         // Freeing the command buffers is not mandatory as they are freed automatically 
         // when the command pool is destroyed.
         self.device.free_command_buffers(self.data.command_pool, &self.data.command_buffers);
-        self.device.destroy_command_pool(self.data.command_pool, None);
+
         self.data.framebuffers
             .iter()
             .for_each(|f| self.device.destroy_framebuffer(*f, None));
@@ -186,13 +233,8 @@ impl App {
             .for_each(|v| self.device.destroy_image_view(*v, None));
 
         self.device.destroy_swapchain_khr(self.data.swapchain, None);
-        self.device.destroy_device(None);
-        if VALIDATION_ENABLED {
-            self.instance.destroy_debug_utils_messenger_ext(self.data.messenger,None);
-        }
-        self.instance.destroy_surface_khr(self.data.surface, None);
-        self.instance.destroy_instance(None);
-    }    
+    }
+    
 }
 
 
