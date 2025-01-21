@@ -4,6 +4,22 @@ use vulkanalia::bytecode::Bytecode;
 
 use crate::app::AppData;
 
+use super::vertex::Vertex;
+
+/// The graphics pipeline in Vulkan is a sequence of steps that the GPU follows to 
+/// transform input data (like vertex positions) into a rendered image on a framebuffer.
+/// It consists of several fixed-function stages (like input assembly and rasterization)
+/// and programmable stages (vertex and fragment shaders).
+/// 
+/// The pipeline specifies how to render to the render pass' attachments, including:
+/// 1. How to write to the color attachment (via fragment shaders)
+/// 2. Whether to use depth/stencil attachments for testing.
+/// 
+/// The pipeline is linked to a specific subpass of the render pass.
+/// Multiple pipelines can be used in different subpasses, each with its own configuration.
+/// 
+/// Must output data to the color attachment in the right format (same as in the render pass
+/// and swapchain).
 pub unsafe fn create_pipeline(
     device: &Device,
     data: &mut AppData
@@ -24,12 +40,17 @@ pub unsafe fn create_pipeline(
         .module(frag_module)
         .name(b"main\0");
 
-    let vertex_input_state = vk::PipelineVertexInputStateCreateInfo::builder();
+    let binding_descriptions = &[Vertex::binding_description()];
+    let attribute_descriptions = Vertex::attribute_descriptions();
+    let vertex_input_state = vk::PipelineVertexInputStateCreateInfo::builder()
+        .vertex_binding_descriptions(binding_descriptions)
+        .vertex_attribute_descriptions(&attribute_descriptions);
 
     let input_assembly_state = vk::PipelineInputAssemblyStateCreateInfo::builder()
         .topology(vk::PrimitiveTopology::TRIANGLE_LIST)
         .primitive_restart_enable(false);
 
+    // Area of the framebuffer to render to. In our case the whole area.
     let viewport = vk::Viewport::builder()
         .x(0.0)
         .y(0.0)
@@ -38,6 +59,7 @@ pub unsafe fn create_pipeline(
         .min_depth(0.0)
         .max_depth(1.0);
 
+    // Area of the framebuffer that fragments are allowed to affect. In our case the whole area.
     let scissor = vk::Rect2D::builder()
         .offset(vk::Offset2D {x: 0, y: 0})
         .extent(data.swapchain_extent);
@@ -49,6 +71,8 @@ pub unsafe fn create_pipeline(
         .viewports(viewports)
         .scissors(scissors);
 
+    // The rasterization state divides polygons into fragments (which end up being pixels on the screen)
+    // and performs fragment culling - removing fragments that don't make it into the view.
     let rasterization_state = vk::PipelineRasterizationStateCreateInfo::builder()
         .depth_clamp_enable(false)
         .rasterizer_discard_enable(false)
@@ -73,12 +97,18 @@ pub unsafe fn create_pipeline(
         .alpha_blend_op(vk::BlendOp::ADD);
 
     let attachments = &[attachment];
+    
+    // Blending new fragments with the existing ones in the framebuffer.
     let color_blend_state = vk::PipelineColorBlendStateCreateInfo::builder()
         .logic_op_enable(false)
         .logic_op(vk::LogicOp::COPY)
         .attachments(attachments)
         .blend_constants([0.0, 0.0, 0.0, 0.0]);
 
+    // The pipeline layout is like a blueprint that defines:
+    // 1. Descriptor sets: How resources like textures and uniform buffers are accessed 
+    //    by the shaders.
+    // 2. Push constants: Small amounts of data sent to shaders for per-draw customization.
     let layout_info = vk::PipelineLayoutCreateInfo::builder();
 
     data.pipeline_layout = device.create_pipeline_layout(&layout_info, None)?;
@@ -93,7 +123,11 @@ pub unsafe fn create_pipeline(
         .multisample_state(&multisample_state)
         .color_blend_state(&color_blend_state)
         .layout(data.pipeline_layout)
+
+        // Link this pipeline to the correct render pass.
         .render_pass(data.render_pass)
+
+        // And the right subpass.
         .subpass(0);
 
     data.pipeline = device.create_graphics_pipelines(vk::PipelineCache::null(), 

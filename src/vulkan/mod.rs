@@ -10,3 +10,4 @@ pub mod render_pass;
 pub mod framebuffer;
 pub mod commands;
 pub mod synchronization;
+pub mod vertex;
