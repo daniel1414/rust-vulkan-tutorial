@@ -9,6 +9,7 @@ use winit::window::Window;
 use anyhow::{anyhow, Result};
 
 use crate::vulkan::framebuffer::create_framebuffers;
+use crate::vulkan::index_buffer::create_index_buffer;
 use crate::vulkan::instance::create_instance;
 use crate::vulkan::physical_device::pick_physical_device;
 use crate::vulkan::device::create_logical_device;
@@ -55,6 +56,7 @@ impl App {
         create_framebuffers(&device, &mut data)?;
         create_command_pool(&instance, &device, &mut data)?;
         create_vertex_buffer(&instance, &device, &mut data)?;
+        create_index_buffer(&instance, &device, &mut data)?;
         create_command_buffers(&device, &mut data)?;
         create_sync_objects(&device, &mut data)?;
 
@@ -78,6 +80,51 @@ impl App {
             .resize(self.data.swapchain_images.len(), vk::Fence::null());
 
         Ok(())
+    }
+
+    /// Destroys our Vulkan app.
+    pub unsafe fn destroy(&mut self) {
+        self.destroy_swapchain();
+
+        self.device.destroy_buffer(self.data.vertex_buffer, None);
+        self.device.free_memory(self.data.index_buffer_memory, None);
+        self.device.destroy_buffer(self.data.index_buffer, None);
+        self.device.free_memory(self.data.vertex_buffer_memory, None);
+        self.data.command_completion_fences
+            .iter()
+            .for_each(|f| self.device.destroy_fence(*f, None));
+        self.data.render_finished_semaphores
+            .iter()
+            .for_each(|s| self.device.destroy_semaphore(*s, None));
+        self.data.image_available_semaphores
+            .iter()
+            .for_each(|s| self.device.destroy_semaphore(*s, None));
+        
+        self.device.destroy_command_pool(self.data.command_pool, None);
+        self.device.destroy_device(None);
+        if VALIDATION_ENABLED {
+            self.instance.destroy_debug_utils_messenger_ext(self.data.messenger,None);
+        }
+        self.instance.destroy_surface_khr(self.data.surface, None);
+        self.instance.destroy_instance(None);
+    }
+
+    unsafe fn destroy_swapchain(&mut self) {
+        // Freeing the command buffers is not mandatory as they are freed automatically 
+        // when the command pool is destroyed.
+        self.device.free_command_buffers(self.data.command_pool, &self.data.command_buffers);
+
+        self.data.framebuffers
+            .iter()
+            .for_each(|f| self.device.destroy_framebuffer(*f, None));
+        self.device.destroy_pipeline(self.data.pipeline, None);
+        self.device.destroy_pipeline_layout(self.data.pipeline_layout, None);
+        self.device.destroy_render_pass(self.data.render_pass, None);
+        self.data.swapchain_image_views
+            .iter()
+            .for_each(|v| self.device.destroy_image_view(*v, None));
+
+        self.device.destroy_swapchain_khr(self.data.swapchain, None);
     }
 
     /// Renders a frame for our Vulkan app.
@@ -194,51 +241,7 @@ impl App {
         self.frame = (self.frame + 1) % MAX_FRAMES_IN_FLIGHT;
         
         Ok(())
-    }
-
-    /// Destroys our Vulkan app.
-    pub unsafe fn destroy(&mut self) {
-        self.destroy_swapchain();
-
-        self.device.destroy_buffer(self.data.vertex_buffer, None);
-        self.device.free_memory(self.data.vertex_buffer_memory, None);
-        self.data.command_completion_fences
-            .iter()
-            .for_each(|f| self.device.destroy_fence(*f, None));
-        self.data.render_finished_semaphores
-            .iter()
-            .for_each(|s| self.device.destroy_semaphore(*s, None));
-        self.data.image_available_semaphores
-            .iter()
-            .for_each(|s| self.device.destroy_semaphore(*s, None));
-        
-        self.device.destroy_command_pool(self.data.command_pool, None);
-        self.device.destroy_device(None);
-        if VALIDATION_ENABLED {
-            self.instance.destroy_debug_utils_messenger_ext(self.data.messenger,None);
-        }
-        self.instance.destroy_surface_khr(self.data.surface, None);
-        self.instance.destroy_instance(None);
-    }
-
-    unsafe fn destroy_swapchain(&mut self) {
-        // Freeing the command buffers is not mandatory as they are freed automatically 
-        // when the command pool is destroyed.
-        self.device.free_command_buffers(self.data.command_pool, &self.data.command_buffers);
-
-        self.data.framebuffers
-            .iter()
-            .for_each(|f| self.device.destroy_framebuffer(*f, None));
-        self.device.destroy_pipeline(self.data.pipeline, None);
-        self.device.destroy_pipeline_layout(self.data.pipeline_layout, None);
-        self.device.destroy_render_pass(self.data.render_pass, None);
-        self.data.swapchain_image_views
-            .iter()
-            .for_each(|v| self.device.destroy_image_view(*v, None));
-
-        self.device.destroy_swapchain_khr(self.data.swapchain, None);
-    }
-    
+    }   
 }
 
 
@@ -284,4 +287,7 @@ pub struct AppData {
 
     pub(crate) vertex_buffer: vk::Buffer,
     pub(crate) vertex_buffer_memory: vk::DeviceMemory,
+
+    pub(crate) index_buffer: vk::Buffer,
+    pub(crate) index_buffer_memory: vk::DeviceMemory,
 }

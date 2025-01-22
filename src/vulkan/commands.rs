@@ -3,7 +3,8 @@ use anyhow::Result;
 
 use crate::app::AppData;
 
-use super::{queue::QueueFamilyIndices, vertex::VERTICES};
+use super::queue::QueueFamilyIndices;
+use super::index_buffer::INDICES;
 
 /// A command pool is an object used to manage the memory allocation of command buffers.
 /// Since command buffers are stored in GPU-accessible memory, the command pool
@@ -89,7 +90,7 @@ pub unsafe fn create_command_buffers(
 
         let color_clear_value = vk::ClearValue {
             color: vk::ClearColorValue {
-                float32: [0.05, 0.05, 0.05, 1.0]
+                float32: [0.02, 0.02, 0.02, 1.0]
             }
         };
 
@@ -110,7 +111,9 @@ pub unsafe fn create_command_buffers(
             // so the pipeline needs to be bound only after the render pass begins.
             device.cmd_bind_pipeline(*command_buffer, vk::PipelineBindPoint::GRAPHICS, data.pipeline);
             device.cmd_bind_vertex_buffers(*command_buffer, 0, &[data.vertex_buffer], &[0]);
-            device.cmd_draw(*command_buffer, VERTICES.len() as u32, 1, 0, 0);
+            device.cmd_bind_index_buffer(*command_buffer, data.index_buffer, 0, vk::IndexType::UINT16);
+            device.cmd_draw_indexed(*command_buffer, INDICES.len() as u32,
+                1, 0, 0, 0);
             device.cmd_end_render_pass(*command_buffer);
         device.end_command_buffer(*command_buffer)?;
     }

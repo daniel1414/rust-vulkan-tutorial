@@ -11,5 +11,6 @@ pub mod framebuffer;
 pub mod commands;
 pub mod synchronization;
 pub mod vertex;
-pub mod vertex_buffer;
 pub mod buffer;
+pub mod vertex_buffer;
+pub mod index_buffer;
