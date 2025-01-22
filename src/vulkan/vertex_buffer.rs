@@ -20,10 +20,11 @@ pub unsafe fn create_vertex_buffer(
         // And the buffer will be used as vertex data to be consumed by the pipeline.
         .usage(vk::BufferUsageFlags::VERTEX_BUFFER)
         
-        // This buffer will be used only by the graphics queue, so we can make it exclusive.
+        // This buffer will be used only by a single queue (the graphics queue), 
+        // so we can make it exclusive for better performance.
         .sharing_mode(vk::SharingMode::EXCLUSIVE);
 
-    // We're not allocating anything yet.
+    // This creates a buffer handle, but no memory is allocated for it yet.
     data.vertex_buffer = device.create_buffer(&buffer_info, None)?;
 
     // These are the requirements for the buffer that we need to find suitable memory for.
@@ -31,6 +32,10 @@ pub unsafe fn create_vertex_buffer(
     // the right memory type bits set).
     let requirements = device.get_buffer_memory_requirements(data.vertex_buffer);
 
+    // The memory must be host-coherent and host-visible to allow CPU access.
+    // HOST_VISIBLE: The memory can be accessed by the CPU.
+    // HOST_COHERENT: Ensures that changes made by the CPU are automatically visible
+    //   to the GPU without the need for explicit flushing. Not the most performant way.
     let memory_properties = 
         vk::MemoryPropertyFlags::HOST_COHERENT | vk::MemoryPropertyFlags::HOST_VISIBLE;
 
@@ -45,14 +50,15 @@ pub unsafe fn create_vertex_buffer(
     // If the offset happens to be non-zero, it must be divisible by requirements.alignment.
     device.bind_buffer_memory(data.vertex_buffer, data.vertex_buffer_memory, 0)?;
     
-    // This command allows us to access a region of the specified memory resource 
-    // defined by an offset and size.
+    // Maps the memory resource, allowing CPU access to a region defined by the offset and size.
+    // This is necessary to copy the vertex data from the CPU to the GPU.
     let memory = device.map_memory(
         data.vertex_buffer_memory, 0, buffer_info.size, vk::MemoryMapFlags::empty())?;
 
+    // Copies the vertex data from CPU memory to the GPU-accessible memory region.
     memcpy(VERTICES.as_ptr(), memory.cast(), VERTICES.len());
 
-    // Need to unmap after mapping.
+    // Unmap the memory after writing to ensure all changes are visible to the GPU.
     device.unmap_memory(data.vertex_buffer_memory);
 
     Ok(())
