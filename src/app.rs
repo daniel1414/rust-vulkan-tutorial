@@ -201,6 +201,7 @@ impl App {
         self.destroy_swapchain();
 
         self.device.destroy_buffer(self.data.vertex_buffer, None);
+        self.device.free_memory(self.data.vertex_buffer_memory, None);
         self.data.command_completion_fences
             .iter()
             .for_each(|f| self.device.destroy_fence(*f, None));
@@ -282,4 +283,5 @@ pub struct AppData {
     pub(crate) image_usage_fences: Vec<vk::Fence>,
 
     pub(crate) vertex_buffer: vk::Buffer,
+    pub(crate) vertex_buffer_memory: vk::DeviceMemory,
 }

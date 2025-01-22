@@ -5,6 +5,9 @@ use vulkanalia::prelude::v1_0::*;
 pub type Vec2 = cgmath::Vector2<f32>;
 pub type Vec3 = cgmath::Vector3<f32>;
 
+/// "Representation C" indicates that the struct should use the C ABI (Application Binary Interface)
+/// for its memory layout. Ensures compatibility with C or other languages that follow the
+/// C standard for struct layout.
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
 pub struct Vertex {

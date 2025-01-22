@@ -3,7 +3,7 @@ use anyhow::Result;
 
 use crate::app::AppData;
 
-use super::queue::QueueFamilyIndices;
+use super::{queue::QueueFamilyIndices, vertex::VERTICES};
 
 /// A command pool is an object used to manage the memory allocation of command buffers.
 /// Since command buffers are stored in GPU-accessible memory, the command pool
@@ -109,7 +109,8 @@ pub unsafe fn create_command_buffers(
             // The pipeline is meant to operate on attachments and the render pass describes them
             // so the pipeline needs to be bound only after the render pass begins.
             device.cmd_bind_pipeline(*command_buffer, vk::PipelineBindPoint::GRAPHICS, data.pipeline);
-            device.cmd_draw(*command_buffer, 3, 1, 0, 0);
+            device.cmd_bind_vertex_buffers(*command_buffer, 0, &[data.vertex_buffer], &[0]);
+            device.cmd_draw(*command_buffer, VERTICES.len() as u32, 1, 0, 0);
             device.cmd_end_render_pass(*command_buffer);
         device.end_command_buffer(*command_buffer)?;
     }
