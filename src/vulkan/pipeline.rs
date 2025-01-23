@@ -109,7 +109,9 @@ pub unsafe fn create_pipeline(
     // 1. Descriptor sets: How resources like textures and uniform buffers are accessed 
     //    by the shaders.
     // 2. Push constants: Small amounts of data sent to shaders for per-draw customization.
-    let layout_info = vk::PipelineLayoutCreateInfo::builder();
+    let set_layouts = &[data.descriptor_set_layout];
+    let layout_info = vk::PipelineLayoutCreateInfo::builder()
+        .set_layouts(set_layouts);
 
     data.pipeline_layout = device.create_pipeline_layout(&layout_info, None)?;
 

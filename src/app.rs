@@ -1,6 +1,9 @@
+use std::ptr::copy_nonoverlapping as memcpy;
 use std::u64;
 
-use vk::{KhrSurfaceExtension, KhrSwapchainExtension};
+use std::time::Instant;
+use cgmath::{point3, vec3, Deg};
+use vk::{KhrSurfaceExtension, KhrSwapchainExtension, PFN_vkCmdDebugMarkerEndEXT};
 use vulkanalia::prelude::v1_0::*;
 use vulkanalia::window as vk_window;
 use vulkanalia::vk::ExtDebugUtilsExtension;
@@ -8,6 +11,7 @@ use vulkanalia::loader::{LibloadingLoader, LIBRARY};
 use winit::window::Window;
 use anyhow::{anyhow, Result};
 
+use crate::vulkan::buffers::uniform_buffer::{create_descriptor_set_layout, create_uniform_buffers, Mat4, UniformBufferObject};
 use crate::vulkan::framebuffer::create_framebuffers;
 use crate::vulkan::instance::create_instance;
 use crate::vulkan::physical_device::pick_physical_device;
@@ -30,12 +34,13 @@ pub const PORTABILITY_MACOS_VERSION: Version = Version::new(1, 3, 216);
 /// The Vulkan App
 #[derive(Clone, Debug)]
 pub struct App {
-    pub(crate) entry: Entry,
-    pub(crate) instance: Instance,
-    pub(crate) data: AppData,
-    pub(crate) device: Device,
-    pub(crate) frame: usize,
-    pub(crate) resized: bool,
+    pub entry: Entry,
+    pub instance: Instance,
+    pub data: AppData,
+    pub device: Device,
+    pub frame: usize,
+    pub resized: bool,
+    pub start: Instant,
 }
 
 impl App {
@@ -52,15 +57,17 @@ impl App {
         create_swapchain(window, &instance, &device, &mut data)?;
         create_swapchain_image_views(&device, &mut data)?;
         create_render_pass(&instance, &device, &mut data)?;
+        create_descriptor_set_layout(&device, &mut data)?;
         create_pipeline(&device, &mut data)?;
         create_framebuffers(&device, &mut data)?;
         create_command_pool(&instance, &device, &mut data)?;
         create_vertex_buffer(&instance, &device, &mut data)?;
         create_index_buffer(&instance, &device, &mut data)?;
+        create_uniform_buffers(&instance, &device, &mut data)?;
         create_command_buffers(&device, &mut data)?;
         create_sync_objects(&device, &mut data)?;
 
-        Ok(Self {entry, instance, data, device, frame: 0, resized: false})
+        Ok(Self {entry, instance, data, device, frame: 0, resized: false, start: Instant::now()})
     }
 
     pub unsafe fn recreate_swapchain(&mut self, window: &Window) -> Result<()> {
@@ -74,6 +81,7 @@ impl App {
         create_render_pass(&self.instance, &self.device, &mut self.data)?;
         create_pipeline(&self.device, &mut self.data)?;
         create_framebuffers(&self.device, &mut self.data)?;
+        create_uniform_buffers(&self.instance, &self.device, &mut self.data)?;
         create_command_buffers(&self.device, &mut self.data)?;
         self.data
             .command_completion_fences
@@ -86,6 +94,7 @@ impl App {
     pub unsafe fn destroy(&mut self) {
         self.destroy_swapchain();
 
+        self.device.destroy_descriptor_set_layout(self.data.descriptor_set_layout, None);
         self.device.destroy_buffer(self.data.vertex_buffer, None);
         self.device.free_memory(self.data.index_buffer_memory, None);
         self.device.destroy_buffer(self.data.index_buffer, None);
@@ -110,6 +119,13 @@ impl App {
     }
 
     unsafe fn destroy_swapchain(&mut self) {
+        self.data.uniform_buffers
+            .iter()
+            .for_each(|b| self.device.destroy_buffer(*b, None));
+        self.data.uniform_buffers_memory 
+            .iter()
+            .for_each(|m| self.device.free_memory(*m, None));
+
         // Freeing the command buffers is not mandatory as they are freed automatically 
         // when the command pool is destroyed.
         self.device.free_command_buffers(self.data.command_pool, &self.data.command_buffers);
@@ -180,6 +196,8 @@ impl App {
         self.data.image_usage_fences[image_index as usize] = 
             self.data.command_completion_fences[self.frame];
 
+        self.update_uniform_buffer(image_index)?;
+
         let wait_semaphores = &[this_frame_image_available_semaphore];
 
         // The pipeline waits at the COLOR_ATTACHMENT_OUTPUT stage, which is where rendering
@@ -242,52 +260,96 @@ impl App {
         
         Ok(())
     }   
-}
 
+    unsafe fn update_uniform_buffer(&self, image_index: usize) -> Result<()> {
+        let time = self.start.elapsed().as_secs_f32();
+
+        let model = Mat4::from_axis_angle(
+            vec3(0.0, 0.0, 1.0),
+            Deg(90.0) * time
+        );
+
+        let view = Mat4::look_at_rh(
+            point3(2.0, 2.0, 2.0),
+            point3(0.0, 0.0, 0.0),
+            vec3(0.0, 0.0, 1.0),
+        );
+
+        let mut proj = cgmath::perspective(Deg(45.0), 
+            self.data.swapchain_extent.width as f32 / self.data.swapchain_extent.height as f32, 
+            0.1, 10.0);
+        
+        // cgmath was originally designed for OpenGL, where the Y coordinate of the clip coordinates
+        // is inverted. This is the easiest way to compensate it.
+        proj[1][1] *= -1.0;
+
+        let ubo = UniformBufferObject {
+            model, view, proj
+        };
+
+        let memory = self.device.map_memory(
+            self.data.uniform_buffers_memory[image_index], 
+            0, 
+            size_of::<UniformBufferObject>() as u64,
+            vk::MemoryMapFlags::empty()
+        )?;
+
+        memcpy(&ubo, memory.cast(), 1);
+        
+        Ok(())
+    }
+}
 
 /// The Vulkan handles and associated properties used by our Vulkan app.
 #[derive(Clone, Debug, Default)]
 pub struct AppData {
-    pub(crate) messenger: vk::DebugUtilsMessengerEXT,
-    pub(crate) physical_device: vk::PhysicalDevice,
-    pub(crate) graphics_queue: vk::Queue,
-    pub(crate) present_queue: vk::Queue,
-    pub(crate) surface: vk::SurfaceKHR,
-    pub(crate) swapchain_format: vk::Format,
-    pub(crate) swapchain_extent: vk::Extent2D,
-    pub(crate) swapchain: vk::SwapchainKHR,
-    pub(crate) swapchain_images: Vec<vk::Image>,
-    pub(crate) swapchain_image_views: Vec<vk::ImageView>,
-    pub(crate) render_pass: vk::RenderPass,
-    pub(crate) pipeline_layout: vk::PipelineLayout,
-    pub(crate) pipeline: vk::Pipeline,
-    pub(crate) framebuffers: Vec<vk::Framebuffer>,
-    pub(crate) command_pool: vk::CommandPool,
-    pub(crate) command_buffers: Vec<vk::CommandBuffer>,
+    pub messenger: vk::DebugUtilsMessengerEXT,
+    pub physical_device: vk::PhysicalDevice,
+    pub graphics_queue: vk::Queue,
+    pub present_queue: vk::Queue,
+    pub surface: vk::SurfaceKHR,
+    pub swapchain_format: vk::Format,
+    pub swapchain_extent: vk::Extent2D,
+    pub swapchain: vk::SwapchainKHR,
+    pub swapchain_images: Vec<vk::Image>,
+    pub swapchain_image_views: Vec<vk::ImageView>,
+    pub render_pass: vk::RenderPass,
+    pub descriptor_set_layout: vk::DescriptorSetLayout,
+    pub pipeline_layout: vk::PipelineLayout,
+    pub pipeline: vk::Pipeline,
+    pub framebuffers: Vec<vk::Framebuffer>,
+    pub command_pool: vk::CommandPool,
+    pub command_buffers: Vec<vk::CommandBuffer>,
 
     /// These semaphores corespond to swapchain images and are signaled 
     /// when the GPU has finished aquiring an image from the swapchain.
     /// Used to synchronize rendering operations with image availability.
-    pub(crate) image_available_semaphores: Vec<vk::Semaphore>,
+    pub image_available_semaphores: Vec<vk::Semaphore>,
 
     /// These semaphores are signaled when the GPU has finished rendering 
     /// to a swapchain image. They synchronize rendering operations with the
     /// presentation engine, ensuring the image is ready to be presented.
-    pub(crate) render_finished_semaphores: Vec<vk::Semaphore>,
+    pub render_finished_semaphores: Vec<vk::Semaphore>,
 
     /// Signaled by the GPU when all commands for the current frame have 
     /// finished executing. Ensures that the CPU does not overwrite
     /// or reuse resources still in use by the GPU.
-    pub(crate) command_completion_fences: Vec<vk::Fence>,
+    pub command_completion_fences: Vec<vk::Fence>,
 
     /// Fences associated with swapchain images currently in use by the GPU.
     /// Ensures that a swapchain image is not overwritten or reused 
     /// while it is still being processed.
-    pub(crate) image_usage_fences: Vec<vk::Fence>,
+    pub image_usage_fences: Vec<vk::Fence>,
 
-    pub(crate) vertex_buffer: vk::Buffer,
-    pub(crate) vertex_buffer_memory: vk::DeviceMemory,
+    pub vertex_buffer: vk::Buffer,
+    pub vertex_buffer_memory: vk::DeviceMemory,
 
-    pub(crate) index_buffer: vk::Buffer,
-    pub(crate) index_buffer_memory: vk::DeviceMemory,
+    pub index_buffer: vk::Buffer,
+    pub index_buffer_memory: vk::DeviceMemory,
+
+    /// One uniform buffer per swapchain image as we will have a different MVP matrix
+    /// in every frame and we don't want to modify a buffer that is in use by the 
+    /// previous frame.
+    pub uniform_buffers: Vec<vk::Buffer>,
+    pub uniform_buffers_memory: Vec<vk::DeviceMemory>,
 }
