@@ -2,9 +2,9 @@ use vulkanalia::prelude::v1_0::*;
 use anyhow::*;
 use std::ptr::copy_nonoverlapping as memcpy;
 
-use crate::app::AppData;
+use crate::{app::AppData, vulkan::vertex::{Vertex, VERTICES}};
 
-use super::{buffer::{copy_buffer, create_buffer}, vertex::{Vertex, VERTICES}};
+use super::buffer::{copy_buffer, create_buffer};
 
 pub unsafe fn create_vertex_buffer(
     instance: &Instance,

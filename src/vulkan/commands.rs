@@ -4,7 +4,7 @@ use anyhow::Result;
 use crate::app::AppData;
 
 use super::queue::QueueFamilyIndices;
-use super::index_buffer::INDICES;
+use super::buffers::index_buffer::INDICES;
 
 /// A command pool is an object used to manage the memory allocation of command buffers.
 /// Since command buffers are stored in GPU-accessible memory, the command pool

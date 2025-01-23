@@ -9,7 +9,6 @@ use winit::window::Window;
 use anyhow::{anyhow, Result};
 
 use crate::vulkan::framebuffer::create_framebuffers;
-use crate::vulkan::index_buffer::create_index_buffer;
 use crate::vulkan::instance::create_instance;
 use crate::vulkan::physical_device::pick_physical_device;
 use crate::vulkan::device::create_logical_device;
@@ -18,7 +17,8 @@ use crate::vulkan::swapchain::{create_swapchain, create_swapchain_image_views};
 use crate::vulkan::pipeline::create_pipeline;
 use crate::vulkan::commands::{create_command_buffers, create_command_pool};
 use crate::vulkan::synchronization::create_sync_objects;
-use crate::vulkan::vertex_buffer::create_vertex_buffer;
+use crate::vulkan::buffers::index_buffer::create_index_buffer;
+use crate::vulkan::buffers::vertex_buffer::create_vertex_buffer;
 use vulkanalia::Version;
 
 pub const MAX_FRAMES_IN_FLIGHT: usize = 3;
