@@ -288,6 +288,13 @@ impl App {
         // is inverted. This is the easiest way to compensate it.
         proj[1][1] *= -1.0;
 
+        // Passing in individual matrices to the GPU and multiplying them in the vertex shader
+        // offloads work to the GPU, but is not recommended for low-poly meshes. 
+        // For static meshes (that don't change location) the MVP should be pre-calculated
+        // on the CPU to save GPU overhead. Multiplication in the vertex shader is recommended for
+        // dynamic scenes, high-poly meshes, CPU-bound applications, per-vertex transformations.
+        // There is also the hybrid approach: Calculate the VP one the CPU and MVP = VP * model
+        // in the vertex shader. This reduces data transfer while retaining some GPU flexibility.
         let ubo = UniformBufferObject {
             model, view, proj
         };
@@ -321,6 +328,8 @@ pub struct AppData {
     pub swapchain_images: Vec<vk::Image>,
     pub swapchain_image_views: Vec<vk::ImageView>,
     pub render_pass: vk::RenderPass,
+
+    /// The layoud of the descriptor set for the UBO that holds the MVP matrix.
     pub descriptor_set_layout: vk::DescriptorSetLayout,
     pub pipeline_layout: vk::PipelineLayout,
     pub pipeline: vk::Pipeline,

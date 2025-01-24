@@ -39,6 +39,11 @@ pub unsafe fn create_uniform_buffers(
 }
 
 
+/// This function should probably take in a descriptor type and the stage flags
+/// for more flexibility. That's to be done when we will need descriptor set layouts
+/// other than the one for the uniform buffer.
+/// 
+/// A descriptor set layout defines the structure of descriptors visible to shaders.
 pub unsafe fn create_descriptor_set_layout(
     device: &Device,
     data: &mut AppData,
@@ -59,12 +64,16 @@ pub unsafe fn create_descriptor_set_layout(
     Ok(())
 }
 
+/// A descriptor pool is an object that manages the memory required for allocating descriptor sets.
+/// Pools alow efficient batch allocation and destruction of descriptor sets.
 pub unsafe fn create_descriptor_pool(
     device: &Device,
     data: &mut AppData,
 ) -> Result<()> {
     let ubo_size = vk::DescriptorPoolSize::builder()
         .type_(vk::DescriptorType::UNIFORM_BUFFER)
+        
+        // We want to allocate one UBO for every swapchain image.
         .descriptor_count(data.swapchain_images.len() as u32);
 
     let pool_sizes = &[ubo_size];
@@ -77,11 +86,32 @@ pub unsafe fn create_descriptor_pool(
     Ok(())
 }
 
+/// A descriptor is an object, that specifies how a shader accesses a resource.
+/// It is metadata that tells Vulkan:
+/// What resource to access (e.g., a uniform buffer, storage buffer, sampled image, etc.)
+/// How to access (e.g., read-only, read-write, etc.)
+/// 
+/// Descriptor types:
+/// 
+/// UNIFORM_BUFFER: Used for UBOs like the MVP matrix.
+/// STORAGE_BUFFER: Used for general-purpose storage buffers.
+/// SAMPLED_IMAGE/COMBINED_IMAGE_SAMPLER: Used for sampled textures and their samplers.
+/// STORAGE_IMAGE: Used for images that shaders can read from or write to directly.
+/// 
+/// Each descriptor is associated with a binding point in the shader (binding = n in the shader).
+/// 
+/// A descriptor set is a collection of descriptors grouped together. Represents a set of
+/// resources that are made available to the shaders at the same time.
+/// The sets are bound to the pipeline before issuing draw calls.
+/// 
+/// 
 pub unsafe fn create_descriptor_sets(
     device: &Device,
     data: &mut AppData,
 ) -> Result<()> {
+    // We use the same layout for all swapchain images.
     let layouts = vec![data.descriptor_set_layout; data.swapchain_images.len()];
+    
     let info = vk::DescriptorSetAllocateInfo::builder()
         .descriptor_pool(data.descriptor_pool)
         .set_layouts(&layouts);
