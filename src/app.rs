@@ -3,7 +3,7 @@ use std::u64;
 
 use std::time::Instant;
 use cgmath::{point3, vec3, Deg};
-use vk::{KhrSurfaceExtension, KhrSwapchainExtension, PFN_vkCmdDebugMarkerEndEXT};
+use vk::{KhrSurfaceExtension, KhrSwapchainExtension};
 use vulkanalia::prelude::v1_0::*;
 use vulkanalia::window as vk_window;
 use vulkanalia::vk::ExtDebugUtilsExtension;
@@ -11,7 +11,7 @@ use vulkanalia::loader::{LibloadingLoader, LIBRARY};
 use winit::window::Window;
 use anyhow::{anyhow, Result};
 
-use crate::vulkan::buffers::uniform_buffer::{create_descriptor_set_layout, create_uniform_buffers, Mat4, UniformBufferObject};
+use crate::vulkan::buffers::uniform_buffer::{create_descriptor_pool, create_descriptor_set_layout, create_descriptor_sets, create_uniform_buffers, Mat4, UniformBufferObject};
 use crate::vulkan::framebuffer::create_framebuffers;
 use crate::vulkan::instance::create_instance;
 use crate::vulkan::physical_device::pick_physical_device;
@@ -64,6 +64,8 @@ impl App {
         create_vertex_buffer(&instance, &device, &mut data)?;
         create_index_buffer(&instance, &device, &mut data)?;
         create_uniform_buffers(&instance, &device, &mut data)?;
+        create_descriptor_pool(&device, &mut data)?;
+        create_descriptor_sets(&device, &mut data)?;
         create_command_buffers(&device, &mut data)?;
         create_sync_objects(&device, &mut data)?;
 
@@ -82,6 +84,8 @@ impl App {
         create_pipeline(&self.device, &mut self.data)?;
         create_framebuffers(&self.device, &mut self.data)?;
         create_uniform_buffers(&self.instance, &self.device, &mut self.data)?;
+        create_descriptor_pool(&self.device, &mut self.data)?;
+        create_descriptor_sets(&self.device, &mut self.data)?;
         create_command_buffers(&self.device, &mut self.data)?;
         self.data
             .command_completion_fences
@@ -119,6 +123,7 @@ impl App {
     }
 
     unsafe fn destroy_swapchain(&mut self) {
+        self.device.destroy_descriptor_pool(self.data.descriptor_pool, None);
         self.data.uniform_buffers
             .iter()
             .for_each(|b| self.device.destroy_buffer(*b, None));
@@ -295,6 +300,8 @@ impl App {
         )?;
 
         memcpy(&ubo, memory.cast(), 1);
+
+        self.device.unmap_memory(self.data.uniform_buffers_memory[image_index]);
         
         Ok(())
     }
@@ -352,4 +359,7 @@ pub struct AppData {
     /// previous frame.
     pub uniform_buffers: Vec<vk::Buffer>,
     pub uniform_buffers_memory: Vec<vk::DeviceMemory>,
+
+    pub descriptor_pool: vk::DescriptorPool,
+    pub descriptor_sets: Vec<vk::DescriptorSet>,
 }
