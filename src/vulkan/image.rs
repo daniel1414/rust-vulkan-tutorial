@@ -279,3 +279,50 @@ pub unsafe fn copy_buffer_to_image(
     
     Ok(())
 }
+
+pub unsafe fn create_texture_sampler(
+    device: &Device,
+    data: &mut AppData,
+) -> Result<()> {
+
+    let info = vk::SamplerCreateInfo::builder()
+        
+        // Magnification concerns the oversampling problem (more texels than fragments)
+        // Determines how to sample when a texture is being magnified (i.e., when more
+        // fragments/pixels are mapped to fewer texels, often due to zooming in)
+        .mag_filter(vk::Filter::LINEAR)
+
+        // Minification concerns undersampling (more fragments than texels)
+        // Determines how to sample when a texture is being minified (i.e., when more 
+        // texels are mapped to fewer fragments/pixels, often due to zooming out)
+        .min_filter(vk::Filter::LINEAR)
+
+        .address_mode_u(vk::SamplerAddressMode::REPEAT)
+        .address_mode_v(vk::SamplerAddressMode::REPEAT)
+        .address_mode_w(vk::SamplerAddressMode::REPEAT)
+
+        .anisotropy_enable(true)
+        .max_anisotropy(16.0)
+
+        // The color that is returned when sampling beyond the image with clamp to border
+        // addressing mode.
+        .border_color(vk::BorderColor::INT_OPAQUE_BLACK)
+        
+        // We want the coordinates to be normalized: range [0, 1) because it's possible
+        // to use textures of varying resolutions with the exact same coordinates.
+        // Otherwise the coordinates would be in range [0, width), [0, height) etc.
+        .unnormalized_coordinates(false)
+        
+        // If a comparison function is enabled, then texels will first be compared to a value,
+        // and the result of that comparison is used in filtering operations.
+        .compare_enable(false)
+        .compare_op(vk::CompareOp::ALWAYS)
+        .mipmap_mode(vk::SamplerMipmapMode::LINEAR)
+        .mip_lod_bias(0.0)
+        .min_lod(0.0)
+        .max_lod(0.0);
+
+        data.texture_sampler = device.create_sampler(&info, None)?;
+    
+    Ok(())
+}
