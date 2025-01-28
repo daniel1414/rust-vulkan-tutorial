@@ -100,6 +100,8 @@ impl App {
     pub unsafe fn destroy(&mut self) {
         self.destroy_swapchain();
 
+        self.device.destroy_image(self.data.texture_image, None);
+        self.device.free_memory(self.data.texture_image_memory, None);
         self.device.destroy_descriptor_set_layout(self.data.descriptor_set_layout, None);
         self.device.destroy_buffer(self.data.vertex_buffer, None);
         self.device.free_memory(self.data.index_buffer_memory, None);
@@ -373,4 +375,7 @@ pub struct AppData {
 
     pub descriptor_pool: vk::DescriptorPool,
     pub descriptor_sets: Vec<vk::DescriptorSet>,
+
+    pub texture_image: vk::Image,
+    pub texture_image_memory: vk::DeviceMemory,
 }

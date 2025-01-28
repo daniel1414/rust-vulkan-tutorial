@@ -1,6 +1,8 @@
+use std::ptr::copy_nonoverlapping as memcpy;
+
 use vulkanalia::prelude::v1_0::*;
 use anyhow::*;
-use std::ptr::copy_nonoverlapping as memcpy;
+
 
 use crate::app::AppData;
 

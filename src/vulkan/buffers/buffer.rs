@@ -1,7 +1,7 @@
 use vulkanalia::prelude::v1_0::*;
 use anyhow::*;
 
-use crate::app::AppData;
+use crate::{app::AppData, vulkan::commands::{begin_single_time_commands, end_single_time_commands}};
 
 pub unsafe fn create_buffer(
     instance: &Instance,
@@ -43,7 +43,7 @@ pub unsafe fn create_buffer(
 
 /// Returns a memory type index for memory that satisfies the given requirements
 /// and has the given properties.
-unsafe fn get_memory_type_index(
+pub unsafe fn get_memory_type_index(
     instance: &Instance,
     data: &mut AppData,
     properties: vk::MemoryPropertyFlags,
@@ -72,31 +72,11 @@ pub unsafe fn copy_buffer(
     size: vk::DeviceSize,
 ) -> Result<()> {
 
-    let info = vk::CommandBufferAllocateInfo::builder()
-        .level(vk::CommandBufferLevel::PRIMARY)
-        .command_pool(data.command_pool)
-        .command_buffer_count(1);
-
-    let command_buffer = 
-        device.allocate_command_buffers(&info)?[0];
-    
-    let info = vk::CommandBufferBeginInfo::builder()
-        .flags(vk::CommandBufferUsageFlags::ONE_TIME_SUBMIT);
-
     let region = vk::BufferCopy::builder().size(size);
     
-    device.begin_command_buffer(command_buffer, &info)?;
-        device.cmd_copy_buffer(command_buffer, source, destination, &[region]);
-    device.end_command_buffer(command_buffer)?;
-
-    let command_buffers = &[command_buffer];
-    let info = vk::SubmitInfo::builder()
-        .command_buffers(command_buffers);
-
-    device.queue_submit(data.graphics_queue, &[info], vk::Fence::null())?;
-    device.queue_wait_idle(data.graphics_queue)?;
-
-    device.free_command_buffers(data.command_pool, command_buffers);
-
+    let command_buffer = begin_single_time_commands(device, data)?;
+    device.cmd_copy_buffer(command_buffer, source, destination, &[region]);
+    end_single_time_commands(device, data, command_buffer)?;
+    
     Ok(())
 }
