@@ -98,21 +98,8 @@ pub unsafe fn create_texture_image_view(
     device: &Device,
     data: &mut AppData,
 ) -> Result<()> {
-    
-    let subresource_range = vk::ImageSubresourceRange::builder()
-        .aspect_mask(vk::ImageAspectFlags::COLOR)
-        .base_mip_level(0)
-        .level_count(1)
-        .base_array_layer(0)
-        .layer_count(1);
 
-    let info = vk::ImageViewCreateInfo::builder()
-        .image(data.texture_image)
-        .format(vk::Format::R8G8B8A8_SRGB)
-        .view_type(vk::ImageViewType::_2D)
-        .subresource_range(subresource_range);
-
-    data.texture_image_view = device.create_image_view(&info, None)?;
+    data.texture_image_view = create_image_view(device, data.texture_image, vk::Format::R8G8B8A8_SRGB)?;
 
     Ok(())
 }
@@ -160,6 +147,30 @@ pub unsafe fn create_image(
     device.bind_image_memory(image, memory, 0)?;
 
     Ok((image, memory))
+}
+
+pub unsafe fn create_image_view(
+    device: &Device,
+    image: vk::Image,
+    format: vk::Format,
+) -> Result<vk::ImageView> {
+
+    let subresource_range = vk::ImageSubresourceRange::builder()
+        .aspect_mask(vk::ImageAspectFlags::COLOR)
+        .base_mip_level(0)
+        .level_count(1)
+        .base_array_layer(0)
+        .layer_count(1);
+
+    let info = vk::ImageViewCreateInfo::builder()
+        .image(image)
+        .format(format)
+        .view_type(vk::ImageViewType::_2D)
+        .subresource_range(subresource_range);
+
+    let image_view = device.create_image_view(&info, None)?;
+    
+    Ok(image_view)
 }
 
 pub unsafe fn transition_image_layout(

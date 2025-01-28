@@ -5,6 +5,7 @@ use winit::window::Window;
 use crate::app::AppData;
 use anyhow::Result;
 
+use super::image::create_image_view;
 use super::queue::QueueFamilyIndices;
 
 
@@ -173,32 +174,7 @@ pub unsafe fn create_swapchain_image_views(
 ) -> Result<()> {
     data.swapchain_image_views = data.swapchain_images
         .iter()
-        .map(|i| {
-            let components = vk::ComponentMapping::builder()
-                .r(vk::ComponentSwizzle::IDENTITY)
-                .g(vk::ComponentSwizzle::IDENTITY)
-                .b(vk::ComponentSwizzle::IDENTITY)
-                .a(vk::ComponentSwizzle::IDENTITY);
-
-            // This specifies which part (or "subresource") of the Vulkan image
-            // will be accessible through the image view being created.
-            // A subresource range allows you to narrow down the part of the image that the view exposes,
-            // such as a specific mipmap level, an array layer or a combination of both.
-            let subresource_range = vk::ImageSubresourceRange::builder()
-                .aspect_mask(vk::ImageAspectFlags::COLOR)
-                .base_mip_level(0)
-                .level_count(1)
-                .base_array_layer(0)
-                .layer_count(1);
-
-            let info = vk::ImageViewCreateInfo::builder()
-                .image(*i)
-                .view_type(vk::ImageViewType::_2D)
-                .format(data.swapchain_format)
-                .components(components)
-                .subresource_range(subresource_range);
-
-            device.create_image_view(&info, None)
-        }).collect::<Result<Vec<_>, _>>()?;
+        .map(|i| create_image_view(device, *i, data.swapchain_format))
+        .collect::<Result<Vec<_>, _>>()?;
     Ok(())
 }
