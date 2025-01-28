@@ -13,7 +13,7 @@ use anyhow::{anyhow, Result};
 
 use crate::vulkan::buffers::uniform_buffer::{create_descriptor_pool, create_descriptor_set_layout, create_descriptor_sets, create_uniform_buffers, Mat4, UniformBufferObject};
 use crate::vulkan::framebuffer::create_framebuffers;
-use crate::vulkan::image::create_texture_image;
+use crate::vulkan::image::{create_texture_image, create_texture_image_view};
 use crate::vulkan::instance::create_instance;
 use crate::vulkan::physical_device::pick_physical_device;
 use crate::vulkan::device::create_logical_device;
@@ -63,6 +63,7 @@ impl App {
         create_framebuffers(&device, &mut data)?;
         create_command_pool(&instance, &device, &mut data)?;
         create_texture_image(&instance, &device, &mut data)?;
+        create_texture_image_view(&device, &mut data)?;
         create_vertex_buffer(&instance, &device, &mut data)?;
         create_index_buffer(&instance, &device, &mut data)?;
         create_uniform_buffers(&instance, &device, &mut data)?;
@@ -100,6 +101,7 @@ impl App {
     pub unsafe fn destroy(&mut self) {
         self.destroy_swapchain();
 
+        self.device.destroy_image_view(self.data.texture_image_view, None);
         self.device.destroy_image(self.data.texture_image, None);
         self.device.free_memory(self.data.texture_image_memory, None);
         self.device.destroy_descriptor_set_layout(self.data.descriptor_set_layout, None);
@@ -378,4 +380,5 @@ pub struct AppData {
 
     pub texture_image: vk::Image,
     pub texture_image_memory: vk::DeviceMemory,
+    pub texture_image_view: vk::ImageView,
 }
