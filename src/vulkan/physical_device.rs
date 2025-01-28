@@ -44,6 +44,11 @@ pub unsafe fn check_physical_device(
     // Check if the physical device has the required extensions
     check_physical_device_extensions(instance, physical_device)?;
 
+    let features = instance.get_physical_device_features(physical_device);
+    if features.sampler_anisotropy != vk::TRUE {
+        return Err(anyhow!(SuitabilityError("No sampler anisotrophy.")));
+    }
+
     Ok(())
 }
 
