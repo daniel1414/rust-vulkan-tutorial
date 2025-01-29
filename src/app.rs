@@ -283,7 +283,7 @@ impl App {
         );
 
         let view = Mat4::look_at_rh(
-            point3(2.0, 2.0, 2.0),
+            point3(0.0, 2.0, 2.0),
             point3(0.0, 0.0, 0.0),
             vec3(0.0, 0.0, 1.0),
         );
@@ -303,8 +303,14 @@ impl App {
         // dynamic scenes, high-poly meshes, CPU-bound applications, per-vertex transformations.
         // There is also the hybrid approach: Calculate the VP one the CPU and MVP = VP * model
         // in the vertex shader. This reduces data transfer while retaining some GPU flexibility.
+        //let ubo = UniformBufferObject {
+        //    model, view, proj
+        //};
+
         let ubo = UniformBufferObject {
-            model, view, proj
+            model,
+            view,
+            proj,
         };
 
         let memory = self.device.map_memory(
