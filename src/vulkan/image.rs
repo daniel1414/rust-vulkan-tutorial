@@ -280,6 +280,9 @@ pub unsafe fn copy_buffer_to_image(
     Ok(())
 }
 
+/// A Sampler is a distinct object that provides an interface to extract colors from a texture.
+/// It's not bound to any specific vk::Image or vk::ImageView. It can be applied to any image,
+/// whether it is 1D, 2D or 3D.
 pub unsafe fn create_texture_sampler(
     device: &Device,
     data: &mut AppData,
