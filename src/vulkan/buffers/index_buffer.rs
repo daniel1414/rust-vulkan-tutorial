@@ -8,7 +8,10 @@ use crate::app::AppData;
 
 use super::buffer::{copy_buffer, create_buffer};
 
-pub const INDICES: &[u16; 6] = &[0, 1, 2, 2, 3, 0];
+pub const INDICES: &[u16; 12] = &[
+    0, 1, 2, 2, 3, 0,
+    4, 5, 6, 6, 7, 4,
+];
 
 /// Same as the vertex buffer, but for indices (see vertex_buffer.rs)
 pub unsafe fn create_index_buffer(
