@@ -94,7 +94,15 @@ pub unsafe fn create_command_buffers(
             }
         };
 
-        let clear_values = &[color_clear_value];
+        let depth_clear_value = vk::ClearValue {
+            depth_stencil: vk::ClearDepthStencilValue {
+                depth: 1.0,
+                stencil: 0,
+            },
+        };
+
+        // The order of clear values should be identical to the order of attachments.
+        let clear_values = &[color_clear_value, depth_clear_value];
         let render_pass_begin_info = vk::RenderPassBeginInfo::builder()
             .render_pass(data.render_pass)
             .framebuffer(data.framebuffers[i])
