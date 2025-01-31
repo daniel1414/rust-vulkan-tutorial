@@ -60,7 +60,7 @@ unsafe fn get_supported_format(
         }).ok_or_else(|| anyhow!("Failed to find supported format!"))
 }
 
-unsafe fn get_depth_format(
+pub unsafe fn get_depth_format(
     instance: &Instance,
     data: &AppData,
 ) -> Result<vk::Format> {

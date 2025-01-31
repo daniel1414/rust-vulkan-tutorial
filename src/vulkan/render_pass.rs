@@ -2,6 +2,8 @@ use vulkanalia::prelude::v1_0::*;
 use crate::app::AppData;
 use anyhow::Result;
 
+use super::buffers::depth_buffer::get_depth_format;
+
 /// A Vulkan render pass is a high-level container for rendering operations.
 /// It defines attachments (images used during rendering), 
 /// subpasses (a sequence of operations that may reuse the same attachments), 
@@ -41,10 +43,31 @@ pub unsafe fn create_render_pass(
         .layout(vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL);
 
     let color_attachments = &[color_attachment_ref];
-    
+
+    let depth_stencil_attachment = vk::AttachmentDescription::builder()
+        .format(get_depth_format(instance, data)?)
+        .samples(vk::SampleCountFlags::_1)
+        .load_op(vk::AttachmentLoadOp::CLEAR)
+        
+        // We don't care about the depth data as it won't be used after drawing
+        // has finished. Contrary to the color attachment, which is used to 
+        // present images to the screen. This may allow the hardware to perform 
+        // additional optimizations.
+        .store_op(vk::AttachmentStoreOp::DONT_CARE)
+        .stencil_load_op(vk::AttachmentLoadOp::DONT_CARE)
+        .stencil_store_op(vk::AttachmentStoreOp::DONT_CARE)
+        .initial_layout(vk::ImageLayout::UNDEFINED)
+        .final_layout(vk::ImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+
+    let depth_stencil_attachment_ref = vk::AttachmentReference::builder()
+        .attachment(1)
+        .layout(vk::ImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+
+
     let subpass = vk::SubpassDescription::builder()
         .pipeline_bind_point(vk::PipelineBindPoint::GRAPHICS)
-        .color_attachments(color_attachments);
+        .color_attachments(color_attachments)
+        .depth_stencil_attachment(&depth_stencil_attachment_ref);
 
     // This dependency makes sure that the swapchain image is ready to be written to
     // in the first subpass. Ensures pipeline and memory synchronization.
