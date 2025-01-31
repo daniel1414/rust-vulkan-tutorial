@@ -288,13 +288,25 @@ impl App {
             vec3(0.0, 0.0, 1.0),
         );
 
-        let mut proj = cgmath::perspective(Deg(45.0), 
-            self.data.swapchain_extent.width as f32 / self.data.swapchain_extent.height as f32, 
-            0.1, 10.0);
+        // Mat4::new constructs the matrix in a column-major order, so the matrix look like
+        // [1,  0, 0  , 0  ]
+        // [0, -1, 0  , 0  ]
+        // [0,  0, 0.5, 0.5]
+        // [0,  0, 0  , 1  ]
+        let correction = Mat4::new(
+            1.0, 0.0, 0.0, 0.0, 
+            0.0, -1.0, 0.0, 0.0, 
+            0.0, 0.0, 1.0 / 2.0, 0.0,
+            0.0, 0.0, 1.0 / 2.0, 1.0);
+
         
         // cgmath was originally designed for OpenGL, where the Y coordinate of the clip coordinates
         // is inverted. This is the easiest way to compensate it.
-        proj[1][1] *= -1.0;
+        let proj = correction * cgmath::perspective(
+            Deg(45.0), 
+            self.data.swapchain_extent.width as f32 / self.data.swapchain_extent.height as f32,
+            0.1,
+            10.0);
 
         // Passing in individual matrices to the GPU and multiplying them in the vertex shader
         // offloads work to the GPU, but is not recommended for low-poly meshes. 
