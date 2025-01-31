@@ -11,6 +11,7 @@ use vulkanalia::loader::{LibloadingLoader, LIBRARY};
 use winit::window::Window;
 use anyhow::{anyhow, Result};
 
+use crate::vulkan::buffers::depth_buffer::create_depth_objects;
 use crate::vulkan::buffers::uniform_buffer::{create_descriptor_pool, create_descriptor_set_layout, create_descriptor_sets, create_uniform_buffers, Mat4, UniformBufferObject};
 use crate::vulkan::framebuffer::create_framebuffers;
 use crate::vulkan::image::{create_texture_image, create_texture_image_view, create_texture_sampler};

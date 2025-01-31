@@ -99,7 +99,7 @@ pub unsafe fn create_texture_image_view(
     data: &mut AppData,
 ) -> Result<()> {
 
-    data.texture_image_view = create_image_view(device, data.texture_image, vk::Format::R8G8B8A8_SRGB)?;
+    data.texture_image_view = create_image_view(device, data.texture_image, vk::Format::R8G8B8A8_SRGB, vk::ImageAspectFlags::COLOR)?;
 
     Ok(())
 }
@@ -153,10 +153,11 @@ pub unsafe fn create_image_view(
     device: &Device,
     image: vk::Image,
     format: vk::Format,
+    aspects: vk::ImageAspectFlags,
 ) -> Result<vk::ImageView> {
 
     let subresource_range = vk::ImageSubresourceRange::builder()
-        .aspect_mask(vk::ImageAspectFlags::COLOR)
+        .aspect_mask(aspects)
         .base_mip_level(0)
         .level_count(1)
         .base_array_layer(0)
