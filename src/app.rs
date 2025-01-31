@@ -62,6 +62,7 @@ impl App {
         create_pipeline(&device, &mut data)?;
         create_framebuffers(&device, &mut data)?;
         create_command_pool(&instance, &device, &mut data)?;
+        create_depth_objects(&instance, &device, &mut data)?;
         create_texture_image(&instance, &device, &mut data)?;
         create_texture_image_view(&device, &mut data)?;
         create_texture_sampler(&device, &mut data)?;
@@ -398,8 +399,14 @@ pub struct AppData {
     pub descriptor_pool: vk::DescriptorPool,
     pub descriptor_sets: Vec<vk::DescriptorSet>,
 
+    /// Resources for textures
     pub texture_image: vk::Image,
     pub texture_image_memory: vk::DeviceMemory,
     pub texture_image_view: vk::ImageView,
     pub texture_sampler: vk::Sampler,
+
+    /// Resources for the depth buffer
+    pub depth_image: vk::Image,
+    pub depth_image_memory: vk::DeviceMemory,
+    pub depth_image_view: vk::ImageView,
 }
