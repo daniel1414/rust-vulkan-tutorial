@@ -115,6 +115,32 @@ pub unsafe fn create_pipeline(
 
     data.pipeline_layout = device.create_pipeline_layout(&layout_info, None)?;
 
+
+    let depth_stencil_state = vk::PipelineDepthStencilStateCreateInfo::builder()
+        
+        // Specifies if the depth of new fragments should be compared to the depth buffer
+        // to see if they should be discarded.
+        .depth_test_enable(true)
+
+        // Specifies if the new depth of fragments that pass the depth test should actually
+        // be written to the depth buffer.
+        .depth_write_enable(true)
+
+        // Comparison that is performed to keep or discard fragments. For us lower depth = closer,
+        // So the depth of new fragments should be less.
+        .depth_compare_op(vk::CompareOp::LESS)
+
+        // These three parameters are used for the optional depth bound test. This allows to
+        // only keep fragments that fall within the specified depth range. This is optional.
+        //.depth_bounds_test_enable(true)
+        //.min_depth_bounds(0.0)
+        //.max_depth_bounds(1.0)
+        .depth_bounds_test_enable(false)
+
+        // We will not be using stencil operations here.
+        .stencil_test_enable(false);
+
+
     let stages = &[vert_stage, frag_stage];
     let info = vk::GraphicsPipelineCreateInfo::builder()
         .stages(stages)
@@ -125,6 +151,7 @@ pub unsafe fn create_pipeline(
         .multisample_state(&multisample_state)
         .color_blend_state(&color_blend_state)
         .layout(data.pipeline_layout)
+        .depth_stencil_state(&depth_stencil_state)
 
         // Link this pipeline to the correct render pass.
         .render_pass(data.render_pass)

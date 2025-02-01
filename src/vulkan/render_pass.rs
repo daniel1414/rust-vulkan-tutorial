@@ -36,7 +36,8 @@ pub unsafe fn create_render_pass(
         .initial_layout(vk::ImageLayout::UNDEFINED)
         
         // Defines what the final layout of the attachment should be after rendering.
-        .final_layout(vk::ImageLayout::PRESENT_SRC_KHR);
+        .final_layout(vk::ImageLayout::PRESENT_SRC_KHR)
+        .build();
 
     let color_attachment_ref = vk::AttachmentReference::builder()
         .attachment(0)
@@ -57,7 +58,8 @@ pub unsafe fn create_render_pass(
         .stencil_load_op(vk::AttachmentLoadOp::DONT_CARE)
         .stencil_store_op(vk::AttachmentStoreOp::DONT_CARE)
         .initial_layout(vk::ImageLayout::UNDEFINED)
-        .final_layout(vk::ImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+        .final_layout(vk::ImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+        .build();
 
     let depth_stencil_attachment_ref = vk::AttachmentReference::builder()
         .attachment(1)
@@ -84,7 +86,8 @@ pub unsafe fn create_render_pass(
         // COLOR_ATTACHMENT_OUTPUT represents the stage where color attachment writes occur.
         // In this case, Vulkan ensures that color attachment output from operations 
         // outside the render pass is finished before continuing (e.g. presenting to the user).
-        .src_stage_mask(vk::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT)
+        .src_stage_mask(vk::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT
+            | vk::PipelineStageFlags::EARLY_FRAGMENT_TESTS)
 
         // Specifies the memory access type(s) in the source scope that need synchronization.
         // In this case there are no specific memory accesses that need synchronization in this dependency.
@@ -95,15 +98,17 @@ pub unsafe fn create_render_pass(
         // subpass that write to the color attachment depend on the completion of prior operations.
         // This ensures that the destination subpass starts writing to the color attachment 
         // only after it's safe to do so.
-        .dst_stage_mask(vk::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT)
+        .dst_stage_mask(vk::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT
+            | vk::PipelineStageFlags::EARLY_FRAGMENT_TESTS)
 
         // Specifies the memory access type(s) required in the destination scope.
         // COLOR_ATTACHMENT_WRITE indicates that the subpass will write to the color attachment.
         // This ensures proper synchronization of memory for writing, so the render pass
         // doesn't overwrite data that's still being processed from prior operations.
-        .dst_access_mask(vk::AccessFlags::COLOR_ATTACHMENT_WRITE);
+        .dst_access_mask(vk::AccessFlags::COLOR_ATTACHMENT_WRITE
+            | vk::AccessFlags::DEPTH_STENCIL_ATTACHMENT_WRITE);
 
-    let attachments = &[color_attachment];
+    let attachments = &[color_attachment, depth_stencil_attachment];
     let subpasses = &[subpass];
     let dependencies = &[dependency];
 

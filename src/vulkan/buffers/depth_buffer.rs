@@ -32,8 +32,6 @@ pub unsafe fn create_depth_objects(
         vk::ImageAspectFlags::DEPTH
     )?;
 
-
-
     Ok(())
 }
 

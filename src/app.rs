@@ -88,6 +88,7 @@ impl App {
         create_swapchain_image_views(&self.device, &mut self.data)?;
         create_render_pass(&self.instance, &self.device, &mut self.data)?;
         create_pipeline(&self.device, &mut self.data)?;
+        create_depth_objects(&self.instance, &self.device, &mut self.data)?;
         create_framebuffers(&self.device, &mut self.data)?;
         create_uniform_buffers(&self.instance, &self.device, &mut self.data)?;
         create_descriptor_pool(&self.device, &mut self.data)?;
@@ -133,6 +134,9 @@ impl App {
     }
 
     unsafe fn destroy_swapchain(&mut self) {
+        self.device.destroy_image_view(self.data.depth_image_view, None);
+        self.device.free_memory(self.data.depth_image_memory, None);
+        self.device.destroy_image(self.data.depth_image, None);
         self.device.destroy_descriptor_pool(self.data.descriptor_pool, None);
         self.data.uniform_buffers
             .iter()
