@@ -2,7 +2,7 @@ use vulkanalia::prelude::v1_0::*;
 use anyhow::*;
 use std::ptr::copy_nonoverlapping as memcpy;
 
-use crate::{app::AppData, vulkan::vertex::{Vertex, VERTICES}};
+use crate::{app::AppData, vulkan::vertex::Vertex};
 
 use super::buffer::{copy_buffer, create_buffer};
 
@@ -13,7 +13,7 @@ pub unsafe fn create_vertex_buffer(
 ) -> Result<()> {
 
     // The buffer needs to hold all our vertex data.
-    let size = (size_of::<Vertex>() * VERTICES.len()) as u64;
+    let size = (size_of::<Vertex>() * data.vertices.len()) as u64;
 
     // Creates a staging buffer accessible to both the CPU and GPU so that we can
     // transfer the vertex data to a more optimal buffer, which the GPU will read 
@@ -41,7 +41,7 @@ pub unsafe fn create_vertex_buffer(
     )?;
 
     // Copies the vertex data from CPU memory to the GPU-accessible memory region.
-    memcpy(VERTICES.as_ptr(), memory.cast(), VERTICES.len());
+    memcpy(data.vertices.as_ptr(), memory.cast(), data.vertices.len());
 
     // Unmap the memory after writing to ensure all changes are visible to the GPU.
     device.unmap_memory(staging_buffer_memory);

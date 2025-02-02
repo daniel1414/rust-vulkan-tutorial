@@ -3,15 +3,9 @@ use std::ptr::copy_nonoverlapping as memcpy;
 use vulkanalia::prelude::v1_0::*;
 use anyhow::*;
 
-
 use crate::app::AppData;
 
 use super::buffer::{copy_buffer, create_buffer};
-
-pub const INDICES: &[u16; 12] = &[
-    0, 1, 2, 2, 3, 0,
-    4, 5, 6, 6, 7, 4,
-];
 
 /// Same as the vertex buffer, but for indices (see vertex_buffer.rs)
 pub unsafe fn create_index_buffer(
@@ -20,7 +14,7 @@ pub unsafe fn create_index_buffer(
     data: &mut AppData,
 ) -> Result<()> {
 
-    let size = (size_of::<u16>() * INDICES.len()) as u64;
+    let size = (size_of::<u16>() * data.vertices.len()) as u64;
     let (staging_buffer, staging_buffer_memory) = create_buffer(
         instance, device, data, size, 
         vk::BufferUsageFlags::TRANSFER_SRC,
@@ -31,7 +25,7 @@ pub unsafe fn create_index_buffer(
         staging_buffer_memory, 0, size, vk::MemoryMapFlags::empty()
     )?;
 
-    memcpy(INDICES.as_ptr(), memory.cast(), INDICES.len());
+    memcpy(data.indices.as_ptr(), memory.cast(), data.indices.len());
 
     device.unmap_memory(staging_buffer_memory);
 

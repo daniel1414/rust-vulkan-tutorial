@@ -25,6 +25,7 @@ use crate::vulkan::commands::{create_command_buffers, create_command_pool};
 use crate::vulkan::synchronization::create_sync_objects;
 use crate::vulkan::buffers::index_buffer::create_index_buffer;
 use crate::vulkan::buffers::vertex_buffer::create_vertex_buffer;
+use crate::vulkan::vertex::Vertex;
 use vulkanalia::Version;
 
 pub const MAX_FRAMES_IN_FLIGHT: usize = 3;
@@ -389,9 +390,11 @@ pub struct AppData {
     /// while it is still being processed.
     pub image_usage_fences: Vec<vk::Fence>,
 
+    pub vertices: Vec<Vertex>,
     pub vertex_buffer: vk::Buffer,
     pub vertex_buffer_memory: vk::DeviceMemory,
 
+    pub indices: Vec<u32>,
     pub index_buffer: vk::Buffer,
     pub index_buffer_memory: vk::DeviceMemory,
 

@@ -14,7 +14,7 @@ pub unsafe fn create_texture_image(
     data: &mut AppData,
 ) -> Result<()> {
 
-    let image = File::open("resources/rook.png")?;
+    let image = File::open("resources/viking_room.png")?;
 
     let decoder = png::Decoder::new(image);
     let mut reader = decoder.read_info()?;
@@ -24,6 +24,10 @@ pub unsafe fn create_texture_image(
 
     let size = reader.output_buffer_size() as u64;
     let (width, height) = reader.info().size();
+
+    if width != 1024 || height != 1024 || reader.info().color_type != png::ColorType::Rgba {
+        panic!("Invalid texture image.");
+    }
 
     let (staging_buffer, staging_buffer_memory) = create_buffer(
         instance, device, data, size, 
