@@ -13,3 +13,4 @@ pub mod synchronization;
 pub mod vertex;
 pub mod buffers;
 pub mod image;
+pub mod model;

@@ -16,6 +16,7 @@ use crate::vulkan::buffers::uniform_buffer::{create_descriptor_pool, create_desc
 use crate::vulkan::framebuffer::create_framebuffers;
 use crate::vulkan::image::{create_texture_image, create_texture_image_view, create_texture_sampler};
 use crate::vulkan::instance::create_instance;
+use crate::vulkan::model::load_model;
 use crate::vulkan::physical_device::pick_physical_device;
 use crate::vulkan::device::create_logical_device;
 use crate::vulkan::render_pass::create_render_pass;
@@ -68,6 +69,7 @@ impl App {
         create_texture_image(&instance, &device, &mut data)?;
         create_texture_image_view(&device, &mut data)?;
         create_texture_sampler(&device, &mut data)?;
+        load_model(&mut data)?;
         create_vertex_buffer(&instance, &device, &mut data)?;
         create_index_buffer(&instance, &device, &mut data)?;
         create_uniform_buffers(&instance, &device, &mut data)?;
