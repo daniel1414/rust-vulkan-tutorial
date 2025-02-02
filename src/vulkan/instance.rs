@@ -3,7 +3,7 @@ use vulkanalia::vk::ExtDebugUtilsExtension;
 use vulkanalia::window as vk_window;
 use winit::window::Window;
 use crate::app::AppData;
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use std::collections::HashSet;
 use crate::app::{VALIDATION_ENABLED, VALIDATION_LAYER, PORTABILITY_MACOS_VERSION};
 use log::*;
@@ -27,12 +27,15 @@ pub unsafe fn create_instance(
         .map(|l| l.layer_name)
         .collect::<HashSet<_>>();
 
-    if VALIDATION_ENABLED && !available_layers.contains(&VALIDATION_LAYER) {
-        return Err(anyhow!("Validation layer requested but not supported"));
-    }
+    let validation_layer_available = available_layers.contains(&VALIDATION_LAYER);
 
     let layers = if VALIDATION_ENABLED {
-        vec![VALIDATION_LAYER.as_ptr()]
+        if validation_layer_available {
+            vec![VALIDATION_LAYER.as_ptr()]
+        } else {
+            println!("Validation layers requested, but not available.");
+            vec![]
+        }
     } else {
         vec![]
     };
