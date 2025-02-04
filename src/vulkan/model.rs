@@ -1,5 +1,5 @@
 
-use std::{fs::File, io::BufReader};
+use std::{collections::HashMap, fs::File, io::BufReader};
 
 use crate::app::AppData;
 use anyhow::Result;
@@ -19,6 +19,8 @@ pub unsafe fn load_model(
         |_| Ok(Default::default()),
     )?;
 
+    let mut unique_vertices = HashMap::new();
+
     for model in models {
         for index in &model.mesh.indices {
 
@@ -34,12 +36,18 @@ pub unsafe fn load_model(
                 color: vec3(1.0, 1.0, 1.0),
                 tex_coord: vec2(
                     model.mesh.texcoords[tex_coord_offset],
-                    model.mesh.texcoords[tex_coord_offset + 1],
+                    1.0 - model.mesh.texcoords[tex_coord_offset + 1],
                 ),
             };
-            
-            data.vertices.push(vertex);
-            data.indices.push(data.indices.len() as u32);
+
+            if let Some(index) = unique_vertices.get(&vertex) {
+                data.indices.push(*index as u32);
+            } else {
+                let index = data.vertices.len();
+                unique_vertices.insert(vertex, index);
+                data.vertices.push(vertex);
+                data.indices.push(index as u32);
+            }
         }
     }
 

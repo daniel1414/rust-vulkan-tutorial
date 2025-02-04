@@ -1,4 +1,4 @@
-use std::mem::size_of;
+use std::{hash::{Hash, Hasher}, mem::size_of};
 use vulkanalia::prelude::v1_0::*;
 
 pub type Vec2 = cgmath::Vector2<f32>;
@@ -51,5 +51,28 @@ impl Vertex {
             .build();
 
         [pos, color, tex_coord]
+    }
+}
+
+impl PartialEq for Vertex {
+    fn eq(&self, other: &Self) -> bool {
+        self.pos == other.pos &&
+            self.color == other.color &&
+            self.tex_coord == other.tex_coord
+    }
+}
+
+impl Eq for Vertex {}
+
+impl Hash for Vertex {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.pos[0].to_bits().hash(state);
+        self.pos[1].to_bits().hash(state);
+        self.pos[2].to_bits().hash(state);
+        self.color[0].to_bits().hash(state);
+        self.color[1].to_bits().hash(state);
+        self.color[2].to_bits().hash(state);
+        self.tex_coord[0].to_bits().hash(state);
+        self.tex_coord[1].to_bits().hash(state);
     }
 }
