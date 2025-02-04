@@ -10,9 +10,9 @@ pub type Vec3 = cgmath::Vector3<f32>;
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
 pub struct Vertex {
-    pos: Vec3,
-    color: Vec3,
-    tex_coord: Vec2,
+    pub pos: Vec3,
+    pub color: Vec3,
+    pub tex_coord: Vec2,
 }
 
 impl Vertex {
