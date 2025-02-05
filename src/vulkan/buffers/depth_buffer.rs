@@ -10,6 +10,7 @@ pub unsafe fn create_depth_objects(
 
     let format = get_depth_format(instance, data)?;
 
+    // The depth buffer is an image like the ones in the swapchain and texture.
     let (depth_image, depth_image_memory) = create_image(
         instance, 
         device, 
@@ -35,6 +36,24 @@ pub unsafe fn create_depth_objects(
     Ok(())
 }
 
+
+pub unsafe fn get_depth_format(
+    instance: &Instance,
+    data: &AppData,
+) -> Result<vk::Format> {
+    
+    let candidates = &[
+        vk::Format::D32_SFLOAT,
+        vk::Format::D32_SFLOAT_S8_UINT,
+        vk::Format::D24_UNORM_S8_UINT,
+    ];
+
+    get_supported_format(
+        instance, data, candidates, 
+        vk::ImageTiling::OPTIMAL, 
+        vk::FormatFeatureFlags::DEPTH_STENCIL_ATTACHMENT)
+}
+
 unsafe fn get_supported_format(
     instance: &Instance,
     data: &AppData,
@@ -56,21 +75,4 @@ unsafe fn get_supported_format(
                 _ => false,
             }
         }).ok_or_else(|| anyhow!("Failed to find supported format!"))
-}
-
-pub unsafe fn get_depth_format(
-    instance: &Instance,
-    data: &AppData,
-) -> Result<vk::Format> {
-    
-    let candidates = &[
-        vk::Format::D32_SFLOAT,
-        vk::Format::D32_SFLOAT_S8_UINT,
-        vk::Format::D24_UNORM_S8_UINT,
-    ];
-
-    get_supported_format(
-        instance, data, candidates, 
-        vk::ImageTiling::OPTIMAL, 
-        vk::FormatFeatureFlags::DEPTH_STENCIL_ATTACHMENT)
 }
