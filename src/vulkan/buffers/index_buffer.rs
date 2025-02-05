@@ -14,7 +14,8 @@ pub unsafe fn create_index_buffer(
     data: &mut AppData,
 ) -> Result<()> {
 
-    let size = (size_of::<u32>() * data.vertices.len()) as u64;
+    let size = (size_of::<u32>() * data.indices.len()) as u64;
+
     let (staging_buffer, staging_buffer_memory) = create_buffer(
         instance, device, data, size, 
         vk::BufferUsageFlags::TRANSFER_SRC,
