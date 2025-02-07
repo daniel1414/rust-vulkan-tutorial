@@ -31,6 +31,8 @@ pub unsafe fn create_texture_image(
 
     data.mip_levels = (width.max(height) as f32).log2().floor() as u32 + 1;
 
+    println!("mip levels: {}", data.mip_levels);
+
     let (staging_buffer, staging_buffer_memory) = create_buffer(
         instance, device, data, size, 
         vk::BufferUsageFlags::TRANSFER_SRC,
@@ -103,7 +105,8 @@ pub unsafe fn create_texture_image(
         instance,
         device, 
         data, 
-        data.texture_image, 
+        data.texture_image,
+        vk::Format::R8G8B8A8_SRGB,
         width, 
         height, 
         data.mip_levels
@@ -120,10 +123,20 @@ pub unsafe fn generate_mipmaps(
     device: &Device,
     data: &AppData,
     image: vk::Image,
+    format: vk::Format,
     width: u32,
     height: u32,
     mip_levels: u32,
 ) -> Result<()> {
+
+    if !instance
+        .get_physical_device_format_properties(data.physical_device, format)
+        .optimal_tiling_features
+        .contains(vk::FormatFeatureFlags::SAMPLED_IMAGE_FILTER_LINEAR) 
+    {
+        return Err(anyhow!("Texture image format does not support linear blitting"));
+    }
+
     let command_buffer = begin_single_time_commands(device, data)?;
 
     let subresource = vk::ImageSubresourceRange::builder()
@@ -201,7 +214,7 @@ pub unsafe fn generate_mipmaps(
         );
 
         barrier.old_layout = vk::ImageLayout::TRANSFER_SRC_OPTIMAL;
-        barrier.new_layout = vk::ImageLayout::TRANSFER_DST_OPTIMAL;
+        barrier.new_layout = vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL;
         barrier.src_access_mask = vk::AccessFlags::TRANSFER_READ;
         barrier.dst_access_mask = vk::AccessFlags::SHADER_READ;
 
