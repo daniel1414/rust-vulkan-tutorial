@@ -16,8 +16,9 @@ pub unsafe fn create_depth_objects(
         device, 
         data, 
         data.swapchain_extent.width, 
-        data.swapchain_extent.height, 
-        format, 
+        data.swapchain_extent.height,
+        1, 
+        format,
         vk::ImageTiling::OPTIMAL, 
         vk::ImageUsageFlags::DEPTH_STENCIL_ATTACHMENT, 
         vk::MemoryPropertyFlags::DEVICE_LOCAL
@@ -30,7 +31,8 @@ pub unsafe fn create_depth_objects(
         device, 
         depth_image, 
         format,
-        vk::ImageAspectFlags::DEPTH
+        vk::ImageAspectFlags::DEPTH,
+        1,
     )?;
 
     Ok(())
