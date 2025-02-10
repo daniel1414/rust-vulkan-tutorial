@@ -22,7 +22,7 @@ pub unsafe fn create_render_pass(
         .format(data.swapchain_format)
         
         // For multisampling (anti-aliasing)
-        .samples(vk::SampleCountFlags::_1)
+        .samples(data.msaa_samples)
         
         // Defines what happens to the attachment at the start of rendering
         .load_op(vk::AttachmentLoadOp::CLEAR)
@@ -36,7 +36,7 @@ pub unsafe fn create_render_pass(
         .initial_layout(vk::ImageLayout::UNDEFINED)
         
         // Defines what the final layout of the attachment should be after rendering.
-        .final_layout(vk::ImageLayout::PRESENT_SRC_KHR)
+        .final_layout(vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL)
         .build();
 
     let color_attachment_ref = vk::AttachmentReference::builder()
@@ -47,7 +47,7 @@ pub unsafe fn create_render_pass(
 
     let depth_stencil_attachment = vk::AttachmentDescription::builder()
         .format(get_depth_format(instance, data)?)
-        .samples(vk::SampleCountFlags::_1)
+        .samples(data.msaa_samples)
         .load_op(vk::AttachmentLoadOp::CLEAR)
         
         // We don't care about the depth data as it won't be used after drawing
@@ -65,11 +65,28 @@ pub unsafe fn create_render_pass(
         .attachment(1)
         .layout(vk::ImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
+    let color_resolve_attachment = vk::AttachmentDescription::builder()
+        .format(data.swapchain_format)
+        .samples(vk::SampleCountFlags::_1)
+        .load_op(vk::AttachmentLoadOp::DONT_CARE)
+        .store_op(vk::AttachmentStoreOp::STORE)
+        .stencil_load_op(vk::AttachmentLoadOp::DONT_CARE)
+        .stencil_store_op(vk::AttachmentStoreOp::DONT_CARE)
+        .initial_layout(vk::ImageLayout::UNDEFINED)
+        .final_layout(vk::ImageLayout::PRESENT_SRC_KHR)
+        .build();
+
+    let color_resolve_attachment_ref = vk::AttachmentReference::builder()
+        .attachment(2)
+        .layout(vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL);
+
+    let resolve_attachments = &[color_resolve_attachment_ref];
 
     let subpass = vk::SubpassDescription::builder()
         .pipeline_bind_point(vk::PipelineBindPoint::GRAPHICS)
         .color_attachments(color_attachments)
-        .depth_stencil_attachment(&depth_stencil_attachment_ref);
+        .depth_stencil_attachment(&depth_stencil_attachment_ref)
+        .resolve_attachments(resolve_attachments);
 
     // This dependency makes sure that the swapchain image is ready to be written to
     // in the first subpass. Ensures pipeline and memory synchronization.
@@ -108,7 +125,11 @@ pub unsafe fn create_render_pass(
         .dst_access_mask(vk::AccessFlags::COLOR_ATTACHMENT_WRITE
             | vk::AccessFlags::DEPTH_STENCIL_ATTACHMENT_WRITE);
 
-    let attachments = &[color_attachment, depth_stencil_attachment];
+    let attachments = &[
+        color_attachment, 
+        depth_stencil_attachment,
+        color_resolve_attachment
+    ];
     let subpasses = &[subpass];
     let dependencies = &[dependency];
 

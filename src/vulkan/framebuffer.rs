@@ -21,7 +21,7 @@ pub unsafe fn create_framebuffers(
     data.framebuffers = data.swapchain_image_views
         .iter()
         .map(|i| {
-            let attachments = &[*i, data.depth_image_view];
+            let attachments = &[data.color_image_view, data.depth_image_view, *i];
             let create_info = vk::FramebufferCreateInfo::builder()
                 .render_pass(data.render_pass)
 
