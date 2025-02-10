@@ -14,7 +14,7 @@ use anyhow::{anyhow, Result};
 use crate::vulkan::buffers::depth_buffer::create_depth_objects;
 use crate::vulkan::buffers::uniform_buffer::{create_descriptor_pool, create_descriptor_set_layout, create_descriptor_sets, create_uniform_buffers, Mat4, UniformBufferObject};
 use crate::vulkan::framebuffer::create_framebuffers;
-use crate::vulkan::image::{create_texture_image, create_texture_image_view, create_texture_sampler};
+use crate::vulkan::image::{create_color_objects, create_texture_image, create_texture_image_view, create_texture_sampler};
 use crate::vulkan::instance::create_instance;
 use crate::vulkan::model::load_model;
 use crate::vulkan::physical_device::pick_physical_device;
@@ -64,6 +64,7 @@ impl App {
         create_descriptor_set_layout(&device, &mut data)?;
         create_pipeline(&device, &mut data)?;
         create_command_pool(&instance, &device, &mut data)?;
+        create_color_objects(&instance, &device, &mut data)?;
         create_depth_objects(&instance, &device, &mut data)?;
         create_framebuffers(&device, &mut data)?;
         create_texture_image(&instance, &device, &mut data)?;
@@ -91,6 +92,7 @@ impl App {
         create_swapchain_image_views(&self.device, &mut self.data)?;
         create_render_pass(&self.instance, &self.device, &mut self.data)?;
         create_pipeline(&self.device, &mut self.data)?;
+        create_color_objects(&self.instance, &self.device, &mut self.data)?;
         create_depth_objects(&self.instance, &self.device, &mut self.data)?;
         create_framebuffers(&self.device, &mut self.data)?;
         create_uniform_buffers(&self.instance, &self.device, &mut self.data)?;
@@ -137,6 +139,9 @@ impl App {
     }
 
     unsafe fn destroy_swapchain(&mut self) {
+        self.device.destroy_image_view(self.data.color_image_view, None);
+        self.device.free_memory(self.data.color_image_memory, None);
+        self.device.destroy_image(self.data.color_image, None);
         self.device.destroy_image_view(self.data.depth_image_view, None);
         self.device.free_memory(self.data.depth_image_memory, None);
         self.device.destroy_image(self.data.depth_image, None);
@@ -354,6 +359,7 @@ impl App {
 pub struct AppData {
     pub messenger: vk::DebugUtilsMessengerEXT,
     pub physical_device: vk::PhysicalDevice,
+    pub msaa_samples: vk::SampleCountFlags,
     pub graphics_queue: vk::Queue,
     pub present_queue: vk::Queue,
     pub surface: vk::SurfaceKHR,
@@ -420,4 +426,9 @@ pub struct AppData {
     pub depth_image: vk::Image,
     pub depth_image_memory: vk::DeviceMemory,
     pub depth_image_view: vk::ImageView,
+
+    // Resources for multisampling
+    pub color_image: vk::Image,
+    pub color_image_memory: vk::DeviceMemory,
+    pub color_image_view: vk::ImageView,
 }

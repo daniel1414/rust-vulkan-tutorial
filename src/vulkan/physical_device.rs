@@ -11,6 +11,7 @@ use super::swapchain::SwapchainSupport;
 pub const DEVICE_EXTENSIONS: &[vk::ExtensionName] = &[vk::KHR_SWAPCHAIN_EXTENSION.name];
 
 pub unsafe fn pick_physical_device(instance: &Instance, data: &mut AppData) -> Result<()> {
+    
     for physical_device in instance.enumerate_physical_devices()? {
         let properties = instance.get_physical_device_properties(physical_device);
 
@@ -19,6 +20,7 @@ pub unsafe fn pick_physical_device(instance: &Instance, data: &mut AppData) -> R
         } else {
             info!("Selected physical device  ('{}').", properties.device_name);
             data.physical_device = physical_device;
+            data.msaa_samples = get_max_msaa_samples(instance, data);
             return Ok(());
         }
     }
@@ -67,4 +69,26 @@ pub unsafe fn check_physical_device_extensions(
     } else {
         Err(anyhow!(SuitabilityError("Missing required device extensions!")))
     }
+}
+
+pub unsafe fn get_max_msaa_samples(
+    instance: &Instance,
+    data: &AppData,
+) -> vk::SampleCountFlags {
+
+    let properties = instance.get_physical_device_properties(data.physical_device);
+    let counts = properties.limits.framebuffer_color_sample_counts
+        & properties.limits.framebuffer_depth_sample_counts;
+    
+    [
+        vk::SampleCountFlags::_64,
+        vk::SampleCountFlags::_32,
+        vk::SampleCountFlags::_16,
+        vk::SampleCountFlags::_8,
+        vk::SampleCountFlags::_4,
+        vk::SampleCountFlags::_2,
+    ]
+    .into_iter()
+    .find(|c| counts.contains(*c))
+    .unwrap_or(vk::SampleCountFlags::_1)
 }
