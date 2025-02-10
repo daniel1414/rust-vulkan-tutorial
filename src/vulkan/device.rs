@@ -43,6 +43,7 @@ pub unsafe fn create_logical_device(
     }
 
     let features = vk::PhysicalDeviceFeatures::builder()
+        .sample_rate_shading(true)
         .sampler_anisotropy(true);
 
     let info = vk::DeviceCreateInfo::builder()

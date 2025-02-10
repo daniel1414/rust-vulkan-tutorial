@@ -1,5 +1,5 @@
 
-use vulkanalia::{prelude::v1_0::*, vk::DeviceMemoryOpaqueCaptureAddressInfo};
+use vulkanalia::prelude::v1_0::*;
 use anyhow::*;
 use std::fs::File;
 
