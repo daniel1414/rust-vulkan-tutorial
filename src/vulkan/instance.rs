@@ -1,20 +1,19 @@
+use super::debug::debug_callback;
+use crate::app::AppData;
+use crate::app::{PORTABILITY_MACOS_VERSION, VALIDATION_ENABLED, VALIDATION_LAYER};
+use anyhow::Result;
+use log::*;
+use std::collections::HashSet;
 use vulkanalia::prelude::v1_3::*;
 use vulkanalia::vk::ExtDebugUtilsExtension;
 use vulkanalia::window as vk_window;
 use winit::window::Window;
-use crate::app::AppData;
-use anyhow::Result;
-use std::collections::HashSet;
-use crate::app::{VALIDATION_ENABLED, VALIDATION_LAYER, PORTABILITY_MACOS_VERSION};
-use log::*;
-use super::debug::debug_callback;
 
 pub unsafe fn create_instance(
-    window: &Window, 
+    window: &Window,
     entry: &Entry,
     data: &mut AppData,
 ) -> Result<Instance> {
-
     let application_info = vk::ApplicationInfo::builder()
         .application_name(b"Vulkan Tutorial\0")
         .application_version(vk::make_version(1, 0, 0))
@@ -22,7 +21,8 @@ pub unsafe fn create_instance(
         .engine_version(vk::make_version(1, 0, 0))
         .api_version(vk::make_version(1, 0, 0));
 
-    let available_layers = entry.enumerate_instance_layer_properties()?
+    let available_layers = entry
+        .enumerate_instance_layer_properties()?
         .iter()
         .map(|l| l.layer_name)
         .collect::<HashSet<_>>();
@@ -49,15 +49,18 @@ pub unsafe fn create_instance(
         extensions.push(vk::EXT_DEBUG_UTILS_EXTENSION.name.as_ptr());
     }
 
-    let flags = if cfg!(target_os = "macos") &&
-        entry.version()? >= PORTABILITY_MACOS_VERSION {
-            info!("Enabling extensions for macOS portability.");
-            extensions.push(vk::KHR_GET_PHYSICAL_DEVICE_PROPERTIES2_EXTENSION.name.as_ptr());
-            extensions.push(vk::KHR_PORTABILITY_ENUMERATION_EXTENSION.name.as_ptr());
-            vk::InstanceCreateFlags::ENUMERATE_PORTABILITY_KHR
-        } else {
-            vk::InstanceCreateFlags::empty()
-        };
+    let flags = if cfg!(target_os = "macos") && entry.version()? >= PORTABILITY_MACOS_VERSION {
+        info!("Enabling extensions for macOS portability.");
+        extensions.push(
+            vk::KHR_GET_PHYSICAL_DEVICE_PROPERTIES2_EXTENSION
+                .name
+                .as_ptr(),
+        );
+        extensions.push(vk::KHR_PORTABILITY_ENUMERATION_EXTENSION.name.as_ptr());
+        vk::InstanceCreateFlags::ENUMERATE_PORTABILITY_KHR
+    } else {
+        vk::InstanceCreateFlags::empty()
+    };
 
     let mut info = vk::InstanceCreateInfo::builder()
         .application_info(&application_info)
@@ -67,9 +70,11 @@ pub unsafe fn create_instance(
 
     let mut debug_info = vk::DebugUtilsMessengerCreateInfoEXT::builder()
         .message_severity(vk::DebugUtilsMessageSeverityFlagsEXT::all())
-        .message_type(vk::DebugUtilsMessageTypeFlagsEXT::GENERAL |
-            vk::DebugUtilsMessageTypeFlagsEXT::VALIDATION |
-            vk::DebugUtilsMessageTypeFlagsEXT::PERFORMANCE)
+        .message_type(
+            vk::DebugUtilsMessageTypeFlagsEXT::GENERAL
+                | vk::DebugUtilsMessageTypeFlagsEXT::VALIDATION
+                | vk::DebugUtilsMessageTypeFlagsEXT::PERFORMANCE,
+        )
         .user_callback(Some(debug_callback));
 
     if VALIDATION_ENABLED {
@@ -81,9 +86,11 @@ pub unsafe fn create_instance(
     if VALIDATION_ENABLED {
         let debug_info = vk::DebugUtilsMessengerCreateInfoEXT::builder()
             .message_severity(vk::DebugUtilsMessageSeverityFlagsEXT::all())
-            .message_type(vk::DebugUtilsMessageTypeFlagsEXT::GENERAL |
-                vk::DebugUtilsMessageTypeFlagsEXT::VALIDATION |
-                vk::DebugUtilsMessageTypeFlagsEXT::PERFORMANCE)
+            .message_type(
+                vk::DebugUtilsMessageTypeFlagsEXT::GENERAL
+                    | vk::DebugUtilsMessageTypeFlagsEXT::VALIDATION
+                    | vk::DebugUtilsMessageTypeFlagsEXT::PERFORMANCE,
+            )
             .user_callback(Some(debug_callback));
 
         data.messenger = instance.create_debug_utils_messenger_ext(&debug_info, None)?;

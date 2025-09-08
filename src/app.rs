@@ -245,7 +245,10 @@ impl App {
 
         let image_index = match result {
             Ok((image_index, _)) => image_index as usize,
-            Err(vk::ErrorCode::OUT_OF_DATE_KHR) => return self.recreate_swapchain(window),
+            Err(vk::ErrorCode::OUT_OF_DATE_KHR) => {
+                dbg!("Swapchain out of date!");
+                return self.recreate_swapchain(window);
+            }
             Err(e) => return Err(anyhow!(e)),
         };
         dbg!(image_index);
