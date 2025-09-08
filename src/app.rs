@@ -6,8 +6,9 @@ use cgmath::{point3, vec3, Deg};
 use std::time::Instant;
 use vk::{KhrSurfaceExtension, KhrSwapchainExtension};
 use vulkanalia::loader::{LibloadingLoader, LIBRARY};
-use vulkanalia::prelude::v1_0::*;
+use vulkanalia::prelude::v1_3::*;
 use vulkanalia::vk::ExtDebugUtilsExtension;
+
 use vulkanalia::window as vk_window;
 use vulkanalia::Version;
 use winit::window::Window;
@@ -95,6 +96,8 @@ impl App {
     }
 
     pub unsafe fn recreate_swapchain(&mut self, window: &Window) -> Result<()> {
+        dbg!("Recreating swapchain");
+
         // We shouldn't touch resources that may still be in use.
         self.device.device_wait_idle()?;
         self.destroy_swapchain();
@@ -111,9 +114,21 @@ impl App {
         create_descriptor_sets(&self.device, &mut self.data)?;
         create_command_buffers(&self.device, &mut self.data)?;
         self.data
-            .command_completion_fences
+            .image_usage_fences
             .resize(self.data.swapchain_images.len(), vk::Fence::null());
 
+        for item in &self.data.image_available_semaphores {
+            dbg!(item);
+        }
+        for item in &self.data.render_finished_semaphores {
+            dbg!(item);
+        }
+        for item in &self.data.image_usage_fences {
+            dbg!(item);
+        }
+        for item in &self.data.command_completion_fences {
+            dbg!(item);
+        }
         Ok(())
     }
 
@@ -201,6 +216,8 @@ impl App {
 
     /// Renders a frame for our Vulkan app.
     pub unsafe fn render(&mut self, window: &Window) -> Result<()> {
+        dbg!(self.frame);
+        std::thread::sleep(std::time::Duration::from_millis(50));
         // Ensures that the GPU has finished executing the commands for the current frame
         // (rendering & presenting) before starting a new frame. This avoids overwriting
         // resources (like command buffers and semaphores) that are still in use.
@@ -231,6 +248,7 @@ impl App {
             Err(vk::ErrorCode::OUT_OF_DATE_KHR) => return self.recreate_swapchain(window),
             Err(e) => return Err(anyhow!(e)),
         };
+        dbg!(image_index);
 
         // If a fence exists and hasn't been signaled for this image, means the GPU
         // is still processing it.

@@ -1,7 +1,7 @@
 use crate::app::AppData;
 use anyhow::Result;
 
-use vulkanalia::prelude::v1_0::*;
+use vulkanalia::prelude::v1_3::*;
 
 /// Creates a framebuffer for every swapchain image view.
 /// Used by the graphics pipeline to render a whole frame.

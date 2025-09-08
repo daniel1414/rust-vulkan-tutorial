@@ -1,6 +1,6 @@
 use crate::app::AppData;
 use anyhow::Result;
-use vulkanalia::prelude::v1_0::*;
+use vulkanalia::prelude::v1_3::*;
 use vulkanalia::vk::KhrSwapchainExtension;
 use vulkanalia::{vk, vk::KhrSurfaceExtension};
 use winit::window::Window;

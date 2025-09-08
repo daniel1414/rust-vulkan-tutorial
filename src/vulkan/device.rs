@@ -1,16 +1,16 @@
 use std::collections::HashSet;
 
-use anyhow::Result;
-use vulkanalia::prelude::v1_0::*;
-use crate::app::AppData;
-use crate::vulkan::queue::*;
-use crate::app::{VALIDATION_ENABLED, VALIDATION_LAYER, PORTABILITY_MACOS_VERSION};
 use super::physical_device::DEVICE_EXTENSIONS;
+use crate::app::AppData;
+use crate::app::{PORTABILITY_MACOS_VERSION, VALIDATION_ENABLED, VALIDATION_LAYER};
+use crate::vulkan::queue::*;
+use anyhow::Result;
+use vulkanalia::prelude::v1_3::*;
 
 pub unsafe fn create_logical_device(
     entry: &Entry,
     instance: &Instance,
-    data: &mut AppData
+    data: &mut AppData,
 ) -> Result<Device> {
     let indices = QueueFamilyIndices::get(instance, data, data.physical_device)?;
 
@@ -19,12 +19,14 @@ pub unsafe fn create_logical_device(
     unique_indices.insert(indices.present);
 
     let queue_priorities = &[1.0];
-    let queue_infos = unique_indices.iter()
+    let queue_infos = unique_indices
+        .iter()
         .map(|i| {
             vk::DeviceQueueCreateInfo::builder()
                 .queue_family_index(*i)
                 .queue_priorities(queue_priorities)
-        }).collect::<Vec<_>>();
+        })
+        .collect::<Vec<_>>();
 
     let layers = if VALIDATION_ENABLED {
         vec![VALIDATION_LAYER.as_ptr()]
@@ -51,10 +53,10 @@ pub unsafe fn create_logical_device(
         .enabled_layer_names(&layers)
         .enabled_extension_names(&extensions)
         .enabled_features(&features);
-    
+
     let device = instance.create_device(data.physical_device, &info, None)?;
     data.graphics_queue = device.get_device_queue(indices.graphics, 0);
     data.present_queue = device.get_device_queue(indices.present, 0);
-    
+
     return Ok(device);
 }

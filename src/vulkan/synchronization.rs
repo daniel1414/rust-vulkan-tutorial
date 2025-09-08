@@ -1,5 +1,5 @@
 use anyhow::Result;
-use vulkanalia::prelude::v1_0::*;
+use vulkanalia::prelude::v1_3::*;
 
 use crate::app::{AppData, MAX_FRAMES_IN_FLIGHT};
 

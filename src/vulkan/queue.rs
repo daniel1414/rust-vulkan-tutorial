@@ -1,7 +1,7 @@
 use crate::app::AppData;
 use super::errors;
 use vk::KhrSurfaceExtension;
-use vulkanalia::prelude::v1_0::*;
+use vulkanalia::prelude::v1_3::*;
 use anyhow::{Result, anyhow};
 
 #[derive(Copy, Clone, Debug)]

@@ -1,5 +1,5 @@
 use std::{hash::{Hash, Hasher}, mem::size_of};
-use vulkanalia::prelude::v1_0::*;
+use vulkanalia::prelude::v1_3::*;
 
 pub type Vec2 = cgmath::Vector2<f32>;
 pub type Vec3 = cgmath::Vector3<f32>;
